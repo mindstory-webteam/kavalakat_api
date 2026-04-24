@@ -1,0 +1,87 @@
+{% extends 'dashboard/base.html' %}
+{% block content %}
+<!-- Status tabs -->
+<div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
+  <a href="?status=" class="btn {% if not status %}btn-primary{% else %}btn-secondary{% endif %}">
+    All <span class="badge badge-gray" style="margin-left:4px;">{{ counts.all }}</span>
+  </a>
+  <a href="?status=new" class="btn {% if status == 'new' %}btn-primary{% else %}btn-secondary{% endif %}">
+    New <span class="badge badge-red" style="margin-left:4px;">{{ counts.new }}</span>
+  </a>
+  <a href="?status=read" class="btn {% if status == 'read' %}btn-primary{% else %}btn-secondary{% endif %}">
+    Read <span class="badge badge-orange" style="margin-left:4px;">{{ counts.read }}</span>
+  </a>
+  <a href="?status=replied" class="btn {% if status == 'replied' %}btn-primary{% else %}btn-secondary{% endif %}">
+    Replied <span class="badge badge-green" style="margin-left:4px;">{{ counts.replied }}</span>
+  </a>
+  <a href="?status=closed" class="btn {% if status == 'closed' %}btn-primary{% else %}btn-secondary{% endif %}">
+    Closed <span class="badge badge-gray" style="margin-left:4px;">{{ counts.closed }}</span>
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <form method="get" style="display:flex;gap:10px;">
+      <input type="hidden" name="status" value="{{ status }}"/>
+      <div class="search-bar">
+        <i class="fa-solid fa-search"></i>
+        <input type="text" name="search" value="{{ search }}" placeholder="Search name, email…"/>
+      </div>
+      <button class="btn btn-secondary" type="submit"><i class="fa-solid fa-search"></i></button>
+    </form>
+    <span class="text-muted text-sm">{{ enquiries.paginator.count }} results</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>From</th><th>Type</th><th>Subject</th><th>Status</th><th>Date</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for e in enquiries %}
+        <tr>
+          <td>
+            <div style="font-weight:600;">{{ e.name }}</div>
+            <div class="text-muted text-sm">{{ e.email }}</div>
+          </td>
+          <td><span class="badge badge-blue">{{ e.get_enquiry_type_display }}</span></td>
+          <td class="text-muted">{{ e.subject|default:e.message|truncatechars:40 }}</td>
+          <td>
+            {% if e.status == 'new' %}<span class="badge badge-red">🔴 New</span>
+            {% elif e.status == 'read' %}<span class="badge badge-orange">🟠 Read</span>
+            {% elif e.status == 'replied' %}<span class="badge badge-green">🟢 Replied</span>
+            {% else %}<span class="badge badge-gray">⚫ Closed</span>{% endif %}
+          </td>
+          <td class="text-muted text-sm">{{ e.created_at|date:"d M Y" }}</td>
+          <td>
+            <div class="flex gap-2">
+              <a href="{% url 'dashboard:enquiry_detail' e.pk %}" class="btn btn-secondary btn-sm btn-icon" title="View">
+                <i class="fa-solid fa-eye"></i>
+              </a>
+              <a href="{% url 'dashboard:enquiry_delete' e.pk %}" class="btn btn-danger btn-sm btn-icon" title="Delete">
+                <i class="fa-solid fa-trash"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6">
+          <div class="empty-state">
+            <i class="fa-solid fa-envelope-open"></i>
+            No enquiries found.
+          </div>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if enquiries.has_other_pages %}
+  <div class="card-body">
+    <div class="pagination">
+      {% if enquiries.has_previous %}<a href="?page={{ enquiries.previous_page_number }}&status={{ status }}">‹</a>{% endif %}
+      <span class="current">{{ enquiries.number }} / {{ enquiries.paginator.num_pages }}</span>
+      {% if enquiries.has_next %}<a href="?page={{ enquiries.next_page_number }}&status={{ status }}">›</a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

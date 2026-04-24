@@ -1,0 +1,265 @@
+{% extends 'dashboard/base.html' %}
+
+{% block topbar_actions %}
+<a href="{% url 'dashboard:portfolio_list' %}" class="btn btn-secondary">
+  <i class="fa-solid fa-arrow-left"></i> Back to Portfolio
+</a>
+{% endblock %}
+
+{% block content %}
+
+{% if not categories %}
+<div class="alert alert-error" style="margin-bottom:20px;">
+  <i class="fa-solid fa-triangle-exclamation"></i>
+  No categories found. Run <code>py manage.py seed_portfolio</code> to create Trading, Distribution and Services categories first.
+</div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data" id="itemForm">
+{% csrf_token %}
+
+<div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;">
+
+  <!-- LEFT: Item Details -->
+  <div style="display:flex;flex-direction:column;gap:16px;">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Item Details</span></div>
+      <div class="card-body">
+
+        <div class="form-group">
+          <label class="form-label">Item Name *
+            <span style="color:#4b5563;font-size:10px;font-weight:400;margin-left:4px;">displayed in UPPERCASE</span>
+          </label>
+          <input type="text" name="name" id="nameInput" class="form-control"
+                 value="{{ obj.name|default:'' }}" required
+                 placeholder="e.g. CEMENT, ULTRATECH, KAVALAKAT GROUP"
+                 style="text-transform:uppercase;font-weight:700;letter-spacing:1px;font-size:13px;"
+                 oninput="this.value=this.value.toUpperCase();updatePreview()"/>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea name="description" class="form-control" rows="4"
+            placeholder="Brief description (optional)…">{{ obj.description|default:'' }}</textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Tags
+            <span style="color:#4b5563;font-size:10px;font-weight:400;margin-left:4px;">comma-separated</span>
+          </label>
+          <input type="text" name="tags" class="form-control"
+                 value="{{ obj.tags|default:'' }}"
+                 placeholder="cement, OPC, construction materials"/>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Image
+            <span style="color:#4b5563;font-size:10px;font-weight:400;margin-left:4px;">optional</span>
+          </label>
+          {% if obj.image %}
+          <div style="margin-bottom:10px;display:flex;align-items:center;gap:12px;">
+            <img src="{{ obj.image.url }}" style="height:64px;width:64px;border-radius:8px;object-fit:cover;border:1px solid #1e2235;"/>
+            <div style="font-size:11px;color:#4b5563;">Upload below to replace</div>
+          </div>
+          {% endif %}
+          <input type="file" name="image" class="form-control" accept="image/*"/>
+        </div>
+
+        <div style="display:grid;grid-template-columns:120px 1fr;gap:16px;align-items:start;margin-bottom:20px;">
+          <div class="form-group" style="margin:0;">
+            <label class="form-label">Order</label>
+            <input type="number" name="order" class="form-control"
+                   value="{{ obj.order|default:0 }}" min="0" style="text-align:center;"/>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:12px;padding-top:26px;">
+            <div class="form-check">
+              <input type="checkbox" name="is_active" id="is_active"
+                     {% if obj.is_active or not obj %}checked{% endif %}/>
+              <label for="is_active" style="font-size:13px;">Visible on website</label>
+            </div>
+            <div class="form-check">
+              <input type="checkbox" name="is_featured" id="is_featured"
+                     {% if obj.is_featured %}checked{% endif %}/>
+              <label for="is_featured" style="font-size:13px;">
+                <span style="color:#eab308;">★</span> Featured item
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="flex gap-2">
+          <button type="submit" class="btn btn-primary" style="padding:10px 24px;">
+            <i class="fa-solid fa-floppy-disk"></i>
+            {% if obj %}Update Item{% else %}Add Item{% endif %}
+          </button>
+          {% if obj %}
+          <a href="{% url 'dashboard:portfolio_item_delete' obj.pk %}" class="btn btn-danger">
+            <i class="fa-solid fa-trash"></i> Delete
+          </a>
+          {% endif %}
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Category + Preview -->
+  <div style="display:flex;flex-direction:column;gap:16px;">
+
+    <!-- Category Selector -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Category *</span></div>
+      <div class="card-body" style="padding:12px;">
+
+        <!-- Hidden input that actually submits -->
+        <input type="hidden" name="category" id="categoryHidden"
+               value="{{ obj.category_id|default:preselected_cat }}"/>
+
+        {% if not categories %}
+        <div style="padding:16px;text-align:center;color:#6b7280;font-size:13px;">
+          No categories. Run <code>seed_portfolio</code> first.
+        </div>
+        {% else %}
+
+        {% for cat in categories %}
+          <div id="catBtn_{{ cat.pk }}"
+               onclick="selectCat('{{ cat.pk }}')"
+               style="display:flex;align-items:center;gap:10px;
+                      padding:11px 14px;border-radius:8px;cursor:pointer;
+                      margin-bottom:6px;border:2px solid #1e2235;
+                      background:transparent;transition:all .15s;
+                      user-select:none;">
+            <div id="catDot_{{ cat.pk }}"
+                 style="width:10px;height:10px;border-radius:50%;
+                        background:{% if cat.name == 'Trading' %}#f97316{% elif cat.name == 'Distribution' %}#3b82f6{% else %}#22c55e{% endif %};
+                        flex-shrink:0;"></div>
+            <div>
+              <div style="font-size:12px;font-weight:700;letter-spacing:1px;
+                          text-transform:uppercase;color:#d1d5db;">{{ cat.name }}</div>
+              <div style="font-size:10px;color:#6b7280;margin-top:1px;">
+                {{ cat.item_count }} item{{ cat.item_count|pluralize }}
+              </div>
+            </div>
+            <div style="margin-left:auto;">
+              <i id="catIcon_{{ cat.pk }}" class="fa-regular fa-circle"
+                 style="color:#374151;font-size:14px;"></i>
+            </div>
+          </div>
+        {% endfor %}
+
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Live Preview -->
+    <div class="card">
+      <div class="card-header">
+        <span style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;font-weight:600;">
+          Website Preview
+        </span>
+      </div>
+      <div style="background:#f0f4f8;border-radius:0 0 10px 10px;padding:16px;">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+          {% for cat in categories %}
+          <div style="min-width:0;">
+            <div style="font-family:sans-serif;font-size:10px;font-weight:800;
+                        text-transform:uppercase;letter-spacing:1.5px;
+                        color:#1a2340;margin-bottom:5px;">{{ cat.name }}</div>
+            <div style="height:2px;background:#1a3a8f;margin-bottom:8px;"></div>
+            {% for item in cat.items.all %}
+            <div style="font-size:9px;font-weight:700;text-transform:uppercase;
+                        letter-spacing:.8px;color:#1a2340;padding:4px 0;
+                        border-bottom:.5px solid #c8cdd6;
+                        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              {{ item.name }}
+            </div>
+            {% endfor %}
+            <div id="newPreview_{{ cat.pk }}"
+                 style="font-size:9px;font-weight:700;text-transform:uppercase;
+                        letter-spacing:.8px;padding:4px 0 4px 5px;
+                        border-bottom:.5px solid #b3c0d9;display:none;
+                        color:#1a3a8f;border-left:2px solid #1a3a8f;">—</div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</form>
+
+<script>
+const CAT_COLORS = {
+  {% for cat in categories %}
+  '{{ cat.pk }}': {
+    col: '{% if cat.name == "Trading" %}#f97316{% elif cat.name == "Distribution" %}#3b82f6{% else %}#22c55e{% endif %}',
+    bg:  '{% if cat.name == "Trading" %}rgba(249,115,22,.08){% elif cat.name == "Distribution" %}rgba(59,130,246,.08){% else %}rgba(34,197,94,.08){% endif %}'
+  },
+  {% endfor %}
+};
+
+let selectedCatId = '{{ obj.category_id|default:preselected_cat }}';
+
+function selectCat(id) {
+  selectedCatId = id;
+  document.getElementById('categoryHidden').value = id;
+
+  // Reset all buttons
+  Object.keys(CAT_COLORS).forEach(function(catId) {
+    const btn  = document.getElementById('catBtn_' + catId);
+    const icon = document.getElementById('catIcon_' + catId);
+    if (btn) {
+      btn.style.border     = '2px solid #1e2235';
+      btn.style.background = 'transparent';
+    }
+    if (icon) {
+      icon.className = 'fa-regular fa-circle';
+      icon.style.color = '#374151';
+    }
+  });
+
+  // Highlight selected
+  const selBtn  = document.getElementById('catBtn_' + id);
+  const selIcon = document.getElementById('catIcon_' + id);
+  const d       = CAT_COLORS[id];
+  if (selBtn && d) {
+    selBtn.style.border     = '2px solid ' + d.col;
+    selBtn.style.background = d.bg;
+  }
+  if (selIcon && d) {
+    selIcon.className = 'fa-solid fa-circle-check';
+    selIcon.style.color = d.col;
+  }
+
+  updatePreview();
+}
+
+function updatePreview() {
+  const name = (document.getElementById('nameInput').value || '').trim();
+
+  // Hide all previews
+  Object.keys(CAT_COLORS).forEach(function(catId) {
+    const el = document.getElementById('newPreview_' + catId);
+    if (el) el.style.display = 'none';
+  });
+
+  // Show in selected category
+  if (name && selectedCatId) {
+    const el = document.getElementById('newPreview_' + selectedCatId);
+    if (el) {
+      el.textContent = name.toUpperCase();
+      el.style.display = 'block';
+    }
+  }
+}
+
+// Init on page load
+document.addEventListener('DOMContentLoaded', function() {
+  if (selectedCatId) {
+    selectCat(selectedCatId);
+  }
+  updatePreview();
+});
+</script>
+{% endblock %}

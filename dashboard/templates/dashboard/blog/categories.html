@@ -1,0 +1,49 @@
+{% extends 'dashboard/base.html' %}
+{% block topbar_actions %}
+  <a href="{% url 'dashboard:blog_category_create' %}" class="btn btn-primary">
+    <i class="fa-solid fa-plus"></i> New Category
+  </a>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Blog Categories</span>
+    <span class="text-muted text-sm">{{ categories|length }} categories</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Name</th><th>Slug</th><th>Order</th><th>Posts</th><th>Description</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for cat in categories %}
+        <tr>
+          <td style="font-weight:600;">{{ cat.name }}</td>
+          <td class="text-muted text-sm">{{ cat.slug }}</td>
+          <td class="text-muted">{{ cat.order }}</td>
+          <td><span class="badge badge-blue">{{ cat.post_count }}</span></td>
+          <td class="text-muted text-sm">{{ cat.description|truncatechars:60|default:"—" }}</td>
+          <td>
+            <div class="flex gap-2">
+              <a href="{% url 'dashboard:blog_category_edit' cat.pk %}" class="btn btn-secondary btn-sm btn-icon" title="Edit">
+                <i class="fa-solid fa-pen"></i>
+              </a>
+              <a href="{% url 'dashboard:blog_category_delete' cat.pk %}" class="btn btn-danger btn-sm btn-icon" title="Delete">
+                <i class="fa-solid fa-trash"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="6">
+          <div class="empty-state">
+            <i class="fa-solid fa-tags"></i>
+            No categories yet. <a href="{% url 'dashboard:blog_category_create' %}">Create one</a>
+          </div>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

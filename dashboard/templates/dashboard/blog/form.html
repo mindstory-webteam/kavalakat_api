@@ -1,0 +1,110 @@
+{% extends 'dashboard/base.html' %}
+{% block topbar_actions %}
+  <a href="{% url 'dashboard:blog_list' %}" class="btn btn-secondary">
+    <i class="fa-solid fa-arrow-left"></i> Back
+  </a>
+{% endblock %}
+{% block content %}
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;">
+
+    <!-- Main Content -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Post Content</span></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label">Title *</label>
+            <input type="text" name="title" class="form-control"
+              value="{{ obj.title|default:'' }}" placeholder="Post title…" required/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Excerpt</label>
+            <textarea name="excerpt" class="form-control" rows="3"
+              placeholder="Short summary (shown in listings)…">{{ obj.excerpt|default:'' }}</textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Content *</label>
+            <textarea name="content" class="form-control" rows="16"
+              placeholder="Write post content in Markdown or HTML…" required>{{ obj.content|default:'' }}</textarea>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">SEO</span></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label">Meta Title</label>
+            <input type="text" name="meta_title" class="form-control"
+              value="{{ obj.meta_title|default:'' }}" placeholder="SEO title (max 60 chars)"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Meta Description</label>
+            <textarea name="meta_description" class="form-control" rows="3"
+              placeholder="SEO description (max 160 chars)">{{ obj.meta_description|default:'' }}</textarea>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Publish</span></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label">Status</label>
+            <select name="status" class="form-control">
+              <option value="draft"     {% if obj.status == 'draft' or not obj %}selected{% endif %}>Draft</option>
+              <option value="published" {% if obj.status == 'published' %}selected{% endif %}>Published</option>
+              <option value="archived"  {% if obj.status == 'archived' %}selected{% endif %}>Archived</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select name="category" class="form-control">
+              <option value="">— No Category —</option>
+              {% for cat in categories %}
+              <option value="{{ cat.pk }}" {% if obj.category_id == cat.pk %}selected{% endif %}>
+                {{ cat.name }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tags</label>
+            <input type="text" name="tags" class="form-control"
+              value="{{ obj.tags|default:'' }}" placeholder="cement, OPC, construction"/>
+          </div>
+          <div class="form-check" style="margin-bottom:12px;">
+            <input type="checkbox" name="is_featured" id="is_featured"
+              {% if obj.is_featured %}checked{% endif %}/>
+            <label for="is_featured" style="font-size:14px;">Featured post</label>
+          </div>
+          <button type="submit" class="btn btn-primary" style="width:100%;">
+            <i class="fa-solid fa-floppy-disk"></i>
+            {% if obj %}Update Post{% else %}Create Post{% endif %}
+          </button>
+          {% if obj %}
+          <a href="{% url 'dashboard:blog_delete' obj.pk %}" class="btn btn-danger" style="width:100%;margin-top:8px;">
+            <i class="fa-solid fa-trash"></i> Delete Post
+          </a>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">Featured Image</span></div>
+        <div class="card-body">
+          {% if obj.image %}
+          <img src="{{ obj.image.url }}" style="width:100%;border-radius:8px;margin-bottom:12px;"/>
+          {% endif %}
+          <input type="file" name="image" class="form-control" accept="image/*"/>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %}

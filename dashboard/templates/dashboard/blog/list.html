@@ -1,0 +1,92 @@
+{% extends 'dashboard/base.html' %}
+{% block topbar_actions %}
+  <a href="{% url 'dashboard:blog_create' %}" class="btn btn-primary">
+    <i class="fa-solid fa-plus"></i> New Post
+  </a>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <form method="get" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <div class="search-bar">
+        <i class="fa-solid fa-search"></i>
+        <input type="text" name="search" value="{{ search }}" placeholder="Search posts…"/>
+      </div>
+      <select name="status" class="form-control" style="width:140px;" onchange="this.form.submit()">
+        <option value="">All Status</option>
+        <option value="published" {% if status == 'published' %}selected{% endif %}>Published</option>
+        <option value="draft"     {% if status == 'draft' %}selected{% endif %}>Draft</option>
+        <option value="archived"  {% if status == 'archived' %}selected{% endif %}>Archived</option>
+      </select>
+      <select name="category" class="form-control" style="width:160px;" onchange="this.form.submit()">
+        <option value="">All Categories</option>
+        {% for cat in categories %}
+        <option value="{{ cat.pk }}">{{ cat.name }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit" class="btn btn-secondary"><i class="fa-solid fa-filter"></i> Filter</button>
+    </form>
+    <span class="text-muted text-sm">{{ posts.paginator.count }} posts</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Title</th><th>Category</th><th>Author</th>
+          <th>Status</th><th>Views</th><th>Date</th><th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for post in posts %}
+        <tr>
+          <td>
+            <div style="font-weight:600;">{{ post.title|truncatechars:48 }}</div>
+            {% if post.is_ai_generated %}
+              <span class="badge badge-blue" style="font-size:10px;margin-top:3px;">🤖 AI</span>
+            {% endif %}
+            {% if post.is_featured %}
+              <span class="badge badge-yellow" style="font-size:10px;margin-top:3px;">★ Featured</span>
+            {% endif %}
+          </td>
+          <td class="text-muted">{{ post.category.name|default:"—" }}</td>
+          <td class="text-muted">{{ post.author.username|default:"—" }}</td>
+          <td>
+            {% if post.status == 'published' %}<span class="badge badge-green">Published</span>
+            {% elif post.status == 'draft' %}<span class="badge badge-yellow">Draft</span>
+            {% else %}<span class="badge badge-gray">Archived</span>{% endif %}
+          </td>
+          <td class="text-muted">{{ post.views }}</td>
+          <td class="text-muted text-sm">{{ post.created_at|date:"d M Y" }}</td>
+          <td>
+            <div class="flex gap-2">
+              <a href="{% url 'dashboard:blog_edit' post.pk %}" class="btn btn-secondary btn-sm btn-icon" title="Edit">
+                <i class="fa-solid fa-pen"></i>
+              </a>
+              <a href="{% url 'dashboard:blog_delete' post.pk %}" class="btn btn-danger btn-sm btn-icon" title="Delete">
+                <i class="fa-solid fa-trash"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7">
+          <div class="empty-state">
+            <i class="fa-solid fa-newspaper"></i>
+            No posts found. <a href="{% url 'dashboard:blog_create' %}">Create one</a>
+          </div>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if posts.has_other_pages %}
+  <div class="card-body">
+    <div class="pagination">
+      {% if posts.has_previous %}<a href="?page={{ posts.previous_page_number }}&search={{ search }}&status={{ status }}">‹</a>{% endif %}
+      <span class="current">{{ posts.number }} / {{ posts.paginator.num_pages }}</span>
+      {% if posts.has_next %}<a href="?page={{ posts.next_page_number }}&search={{ search }}&status={{ status }}">›</a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

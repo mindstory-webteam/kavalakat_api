@@ -1,0 +1,43 @@
+{% extends 'dashboard/base.html' %}
+{% block topbar_actions %}
+  <a href="{% url 'dashboard:blog_categories' %}" class="btn btn-secondary">
+    <i class="fa-solid fa-arrow-left"></i> Back
+  </a>
+{% endblock %}
+{% block content %}
+<div style="max-width:520px;">
+  <div class="card">
+    <div class="card-header"><span class="card-title">{{ page_title }}</span></div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+        <div class="form-group">
+          <label class="form-label">Category Name *</label>
+          <input type="text" name="name" class="form-control"
+            value="{{ obj.name|default:'' }}" required placeholder="e.g. Cement Grade"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea name="description" class="form-control" rows="4"
+            placeholder="Brief description of this category">{{ obj.description|default:'' }}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Order</label>
+          <input type="number" name="order" class="form-control" value="{{ obj.order|default:0 }}"/>
+        </div>
+        <div class="flex gap-2" style="margin-top:8px;">
+          <button type="submit" class="btn btn-primary">
+            <i class="fa-solid fa-floppy-disk"></i>
+            {% if obj %}Update Category{% else %}Create Category{% endif %}
+          </button>
+          {% if obj %}
+          <a href="{% url 'dashboard:blog_category_delete' obj.pk %}" class="btn btn-danger">
+            <i class="fa-solid fa-trash"></i> Delete
+          </a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
