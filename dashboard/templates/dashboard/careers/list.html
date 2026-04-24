@@ -1,0 +1,72 @@
+{% extends 'dashboard/base.html' %}
+{% block topbar_actions %}
+  <a href="{% url 'dashboard:careers_create' %}" class="btn btn-primary">
+    <i class="fa-solid fa-plus"></i> Post a Job
+  </a>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Career Listings</span>
+    <span class="text-muted text-sm">{{ careers.paginator.count }} jobs</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>Title</th><th>Department</th><th>Type</th><th>Location</th><th>Deadline</th><th>Status</th><th>Actions</th></tr>
+      </thead>
+      <tbody>
+        {% for job in careers %}
+        <tr>
+          <td>
+            <div style="font-weight:600;">{{ job.title }}</div>
+            {% if job.salary_range %}<div class="text-muted text-sm">{{ job.salary_range }}</div>{% endif %}
+          </td>
+          <td class="text-muted">{{ job.department|default:"—" }}</td>
+          <td>
+            <span class="badge {% if job.job_type == 'Full-Time' %}badge-green{% elif job.job_type == 'Part-Time' %}badge-blue{% elif job.job_type == 'Contract' %}badge-orange{% else %}badge-yellow{% endif %}">
+              {{ job.job_type }}
+            </span>
+          </td>
+          <td class="text-muted">{{ job.location|default:"—" }}</td>
+          <td class="text-muted text-sm">{{ job.deadline|date:"d M Y"|default:"—" }}</td>
+          <td>
+            {% if job.is_active %}
+            <span class="badge badge-green">✔ Open</span>
+            {% else %}
+            <span class="badge badge-red">✘ Closed</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="flex gap-2">
+              <a href="{% url 'dashboard:careers_edit' job.pk %}" class="btn btn-secondary btn-sm btn-icon" title="Edit">
+                <i class="fa-solid fa-pen"></i>
+              </a>
+              <a href="{% url 'dashboard:careers_delete' job.pk %}" class="btn btn-danger btn-sm btn-icon" title="Delete">
+                <i class="fa-solid fa-trash"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="7">
+          <div class="empty-state">
+            <i class="fa-solid fa-user-tie"></i>
+            No job listings yet. <a href="{% url 'dashboard:careers_create' %}">Post one</a>
+          </div>
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if careers.has_other_pages %}
+  <div class="card-body">
+    <div class="pagination">
+      {% if careers.has_previous %}<a href="?page={{ careers.previous_page_number }}">‹</a>{% endif %}
+      <span class="current">{{ careers.number }} / {{ careers.paginator.num_pages }}</span>
+      {% if careers.has_next %}<a href="?page={{ careers.next_page_number }}">›</a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

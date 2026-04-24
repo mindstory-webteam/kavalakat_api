@@ -1,0 +1,83 @@
+{% extends 'dashboard/base.html' %}
+{% block topbar_actions %}
+  <a href="{% url 'dashboard:enquiry_list' %}" class="btn btn-secondary"><i class="fa-solid fa-arrow-left"></i> Back</a>
+  <a href="{% url 'dashboard:enquiry_delete' obj.pk %}" class="btn btn-danger"><i class="fa-solid fa-trash"></i> Delete</a>
+{% endblock %}
+{% block content %}
+<div style="display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start;">
+  <div>
+    <div class="card mb-4">
+      <div class="card-header"><span class="card-title">Message</span></div>
+      <div class="card-body">
+        <div style="font-size:14px;line-height:1.7;color:var(--text);">{{ obj.message }}</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Admin Note</span></div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="status" value="{{ obj.status }}"/>
+          <textarea name="admin_note" class="form-control" rows="5"
+            placeholder="Internal notes about this enquiry…">{{ obj.admin_note }}</textarea>
+          <button type="submit" class="btn btn-primary" style="margin-top:12px;">
+            <i class="fa-solid fa-floppy-disk"></i> Save Note
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:16px;">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Sender Info</span></div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
+        <div>
+          <div class="text-muted text-sm">Name</div>
+          <div style="font-weight:600;margin-top:3px;">{{ obj.name }}</div>
+        </div>
+        <div>
+          <div class="text-muted text-sm">Email</div>
+          <a href="mailto:{{ obj.email }}" style="color:var(--accent);">{{ obj.email }}</a>
+        </div>
+        {% if obj.phone %}
+        <div>
+          <div class="text-muted text-sm">Phone</div>
+          <div style="margin-top:3px;">{{ obj.phone }}</div>
+        </div>
+        {% endif %}
+        {% if obj.company %}
+        <div>
+          <div class="text-muted text-sm">Company</div>
+          <div style="margin-top:3px;">{{ obj.company }}</div>
+        </div>
+        {% endif %}
+        <div>
+          <div class="text-muted text-sm">Type</div>
+          <span class="badge badge-blue" style="margin-top:3px;">{{ obj.get_enquiry_type_display }}</span>
+        </div>
+        <div>
+          <div class="text-muted text-sm">Received</div>
+          <div style="margin-top:3px;">{{ obj.created_at|date:"d M Y, H:i" }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Update Status</span></div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <textarea name="admin_note" style="display:none;">{{ obj.admin_note }}</textarea>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            {% for val, label in obj.STATUS_CHOICES %}
+            <button type="submit" name="status" value="{{ val }}"
+              class="btn {% if obj.status == val %}btn-primary{% else %}btn-secondary{% endif %}">
+              {{ label }}
+            </button>
+            {% endfor %}
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

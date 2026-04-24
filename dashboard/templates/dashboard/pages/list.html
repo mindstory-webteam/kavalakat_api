@@ -1,0 +1,33 @@
+{% extends 'dashboard/base.html' %}
+{% block topbar_actions %}
+  <a href="{% url 'dashboard:pages_create' %}" class="btn btn-primary"><i class="fa-solid fa-plus"></i> New Page</a>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <form method="get"><div class="search-bar"><i class="fa-solid fa-search"></i>
+      <input type="text" name="search" value="{{ search }}" placeholder="Search pages…"/>
+    </div></form>
+    <span class="text-muted text-sm">{{ pages.paginator.count }} pages</span>
+  </div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Title</th><th>Slug</th><th>Order</th><th>Status</th><th>Updated</th><th>Actions</th></tr></thead>
+    <tbody>
+    {% for p in pages %}
+    <tr>
+      <td style="font-weight:600;">{{ p.title }}</td>
+      <td class="text-muted text-sm">/{{ p.slug }}/</td>
+      <td class="text-muted">{{ p.order }}</td>
+      <td>{% if p.is_active %}<span class="badge badge-green">Active</span>{% else %}<span class="badge badge-gray">Inactive</span>{% endif %}</td>
+      <td class="text-muted text-sm">{{ p.updated_at|date:"d M Y" }}</td>
+      <td><div class="flex gap-2">
+        <a href="{% url 'dashboard:pages_edit' p.pk %}" class="btn btn-secondary btn-sm btn-icon"><i class="fa-solid fa-pen"></i></a>
+        <a href="{% url 'dashboard:pages_delete' p.pk %}" class="btn btn-danger btn-sm btn-icon"><i class="fa-solid fa-trash"></i></a>
+      </div></td>
+    </tr>
+    {% empty %}<tr><td colspan="6"><div class="empty-state"><i class="fa-solid fa-file-lines"></i>No pages yet.</div></td></tr>
+    {% endfor %}
+    </tbody>
+  </table></div>
+</div>
+{% endblock %}

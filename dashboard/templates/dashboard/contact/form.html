@@ -1,0 +1,107 @@
+{% extends 'dashboard/base.html' %}
+{% block content %}
+<form method="post">
+  {% csrf_token %}
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div class="card">
+        <div class="card-header"><span class="card-title">📞 Contact Details</span></div>
+        <div class="card-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Primary Phone</label>
+              <input type="text" name="phone" class="form-control" value="{{ obj.phone|default:'' }}" placeholder="+91 98765 43210"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Alternate Phone</label>
+              <input type="text" name="alt_phone" class="form-control" value="{{ obj.alt_phone|default:'' }}"/>
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Primary Email</label>
+              <input type="email" name="email" class="form-control" value="{{ obj.email|default:'' }}" placeholder="info@kavalakat.com"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Alternate Email</label>
+              <input type="email" name="alt_email" class="form-control" value="{{ obj.alt_email|default:'' }}"/>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">WhatsApp Number</label>
+            <input type="text" name="whatsapp" class="form-control" value="{{ obj.whatsapp|default:'' }}" placeholder="+91 98765 43210"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Business Hours</label>
+            <input type="text" name="business_hours" class="form-control" value="{{ obj.business_hours|default:'' }}" placeholder="Mon-Sat: 9AM – 6PM"/>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header"><span class="card-title">📍 Address</span></div>
+        <div class="card-body">
+          <div class="form-group">
+            <label class="form-label">Full Address</label>
+            <textarea name="address" class="form-control" rows="3" placeholder="Street / Building name">{{ obj.address|default:'' }}</textarea>
+          </div>
+          <div class="form-grid-3">
+            <div class="form-group">
+              <label class="form-label">City</label>
+              <input type="text" name="city" class="form-control" value="{{ obj.city|default:'' }}" placeholder="Kochi"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">State</label>
+              <input type="text" name="state" class="form-control" value="{{ obj.state|default:'' }}" placeholder="Kerala"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">PIN Code</label>
+              <input type="text" name="pincode" class="form-control" value="{{ obj.pincode|default:'' }}" placeholder="682001"/>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Google Maps Embed URL</label>
+            <input type="url" name="map_embed_url" class="form-control" value="{{ obj.map_embed_url|default:'' }}" placeholder="https://www.google.com/maps/embed?..."/>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div class="card">
+        <div class="card-header"><span class="card-title">🌐 Social Media</span></div>
+        <div class="card-body">
+          {% for field, icon, placeholder in social_fields %}
+          <div class="form-group">
+            <label class="form-label"><i class="{{ icon }}"></i> {{ field|capfirst }}</label>
+            <input type="url" name="{{ field }}" class="form-control"
+              value="{{ obj|default:''|default:'' }}" placeholder="{{ placeholder }}"/>
+          </div>
+          {% endfor %}
+          <div class="form-group">
+            <label class="form-label"><i class="fa-brands fa-facebook"></i> Facebook</label>
+            <input type="url" name="facebook" class="form-control" value="{{ obj.facebook|default:'' }}" placeholder="https://facebook.com/kavalakat"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label"><i class="fa-brands fa-instagram"></i> Instagram</label>
+            <input type="url" name="instagram" class="form-control" value="{{ obj.instagram|default:'' }}" placeholder="https://instagram.com/kavalakat"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label"><i class="fa-brands fa-linkedin"></i> LinkedIn</label>
+            <input type="url" name="linkedin" class="form-control" value="{{ obj.linkedin|default:'' }}" placeholder="https://linkedin.com/company/kavalakat"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label"><i class="fa-brands fa-youtube"></i> YouTube</label>
+            <input type="url" name="youtube" class="form-control" value="{{ obj.youtube|default:'' }}" placeholder="https://youtube.com/@kavalakat"/>
+          </div>
+        </div>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width:100%;padding:14px;">
+        <i class="fa-solid fa-floppy-disk"></i> Save Contact Info
+      </button>
+    </div>
+  </div>
+</form>
+{% endblock %}

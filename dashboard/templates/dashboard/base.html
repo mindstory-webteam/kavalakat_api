@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>{% block title %}{{ page_title }} — Kavalakat CMS{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --bg:        #0a0c10;
+  --surface:   #0f1218;
+  --surface2:  #161b24;
+  --border:    #1e2535;
+  --accent:    #0160b2;
+  --accent2:   #0472d0;
+  --accent3:   #0284f0;
+  --text:      #e8eaf0;
+  --muted:     #6b7280;
+  --success:   #22c55e;
+  --warning:   #eab308;
+  --danger:    #ef4444;
+  --info:      #3b82f6;
+  --sidebar-w: 260px;
+  --radius:    12px;
+  --font-head: 'Syne', sans-serif;
+  --font-body: 'DM Sans', sans-serif;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { font-size: 15px; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+}
+
+/* ── SIDEBAR ── */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  z-index: 100;
+  overflow-y: auto;
+}
+.sidebar-logo {
+  padding: 20px 18px 16px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(135deg, #0a0e1a 0%, #0d1420 100%);
+}
+.logo-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.logo-icon {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+}
+.logo-text-wrap {
+  display: flex;
+  flex-direction: column;
+}
+.logo-name {
+  font-family: var(--font-head);
+  font-size: 17px;
+  font-weight: 800;
+  {% comment %} color: #0160b2; {% endcomment %}
+  letter-spacing: 1px;
+  line-height: 1;
+}
+.logo-sub {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  {% comment %} color: var(--muted); {% endcomment %}
+  margin-top: 3px;
+}
+.sidebar-nav { flex: 1; padding: 14px 0; }
+.nav-section {
+  font-size: 9px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #2a3550;
+  padding: 14px 20px 5px;
+  font-weight: 600;
+}
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 20px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 500;
+  border-left: 3px solid transparent;
+  transition: all 0.15s;
+  position: relative;
+}
+.nav-item:hover { color: var(--text); background: var(--surface2); }
+.nav-item.active {
+  color: #4da3ff;
+  border-left-color: #0160b2;
+  background: rgba(1,96,178,.12);
+}
+.nav-item i { width: 18px; text-align: center; font-size: 13px; }
+.nav-badge {
+  margin-left: auto;
+  background: var(--danger);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 99px;
+}
+.sidebar-footer {
+  padding: 14px 18px;
+  border-top: 1px solid var(--border);
+  background: linear-gradient(135deg, #0a0e1a 0%, #0d1420 100%);
+}
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.user-avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0160b2, #0284f0);
+  display: flex; align-items: center; justify-content: center;
+  font-family: var(--font-head);
+  font-weight: 700;
+  font-size: 13px;
+  color: #fff;
+  flex-shrink: 0;
+  border: 1px solid rgba(1,96,178,.5);
+}
+.user-name { font-size: 12px; font-weight: 600; color: var(--text); }
+.user-role { font-size: 10px; color: var(--muted); }
+.logout-btn {
+  margin-left: auto;
+  color: var(--muted);
+  font-size: 14px;
+  text-decoration: none;
+  padding: 6px;
+  border-radius: 6px;
+  transition: color .15s;
+}
+.logout-btn:hover { color: var(--danger); }
+
+/* ── MAIN ── */
+.main {
+  margin-left: var(--sidebar-w);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+}
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 28px;
+  height: 58px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.topbar-title {
+  font-family: var(--font-head);
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text);
+}
+.topbar-actions { display: flex; gap: 10px; align-items: center; }
+.content { padding: 26px; flex: 1; }
+
+/* ── CARDS ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.card-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.card-title {
+  font-family: var(--font-head);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text);
+}
+.card-body { padding: 20px; }
+
+/* ── STAT CARDS ── */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+  margin-bottom: 22px;
+}
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  transition: border-color .2s;
+}
+.stat-card:hover { border-color: var(--accent); }
+.stat-icon {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+.stat-value {
+  font-family: var(--font-head);
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--text);
+}
+.stat-label { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+/* ── BUTTONS ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent2); }
+.btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.btn-secondary:hover { border-color: var(--accent); color: #4da3ff; }
+.btn-danger { background: rgba(239,68,68,.12); color: var(--danger); border: 1px solid rgba(239,68,68,.25); }
+.btn-danger:hover { background: rgba(239,68,68,.22); }
+.btn-success { background: rgba(34,197,94,.12); color: var(--success); border: 1px solid rgba(34,197,94,.25); }
+.btn-sm { padding: 5px 10px; font-size: 12px; }
+.btn-icon { padding: 6px; border-radius: 7px; }
+
+/* ── TABLE ── */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; }
+th {
+  text-align: left;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+}
+td {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  vertical-align: middle;
+}
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--surface2); }
+
+/* ── BADGES ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 99px;
+  font-size: 10px;
+  font-weight: 600;
+}
+.badge-green  { background: rgba(34,197,94,.12);  color: #22c55e; }
+.badge-red    { background: rgba(239,68,68,.12);  color: #ef4444; }
+.badge-orange { background: rgba(249,115,22,.12); color: #f97316; }
+.badge-blue   { background: rgba(1,96,178,.15);   color: #4da3ff; }
+.badge-gray   { background: rgba(107,114,128,.12);color: var(--muted); }
+.badge-yellow { background: rgba(234,179,8,.12);  color: #eab308; }
+
+/* ── FORMS ── */
+.form-group { margin-bottom: 18px; }
+.form-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  color: var(--muted);
+  margin-bottom: 7px;
+}
+.form-control {
+  width: 100%;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 14px;
+  transition: border-color .15s;
+}
+.form-control:focus { outline: none; border-color: var(--accent); }
+textarea.form-control { min-height: 120px; resize: vertical; }
+.form-check { display: flex; align-items: center; gap: 10px; }
+.form-check input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent); }
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+
+/* ── SEARCH BAR ── */
+.search-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 14px;
+  max-width: 320px;
+}
+.search-bar i { color: var(--muted); font-size: 12px; }
+.search-bar input {
+  background: none;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 8px 0;
+  width: 220px;
+}
+
+/* ── ALERTS ── */
+.alert {
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.alert-success { background: rgba(34,197,94,.10); border: 1px solid rgba(34,197,94,.25); color: var(--success); }
+.alert-error   { background: rgba(239,68,68,.10); border: 1px solid rgba(239,68,68,.25); color: var(--danger); }
+
+/* ── PAGINATION ── */
+.pagination { display: flex; gap: 6px; align-items: center; padding-top: 14px; }
+.pagination a, .pagination span {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 32px; height: 32px;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+}
+.pagination a { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+.pagination a:hover { border-color: var(--accent); color: #4da3ff; }
+.pagination .current { background: var(--accent); color: #fff; }
+
+/* ── MISC ── */
+.flex { display: flex; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
+.mb-4 { margin-bottom: 16px; }
+.mb-6 { margin-bottom: 24px; }
+.text-muted { color: var(--muted); }
+.text-sm { font-size: 12px; }
+.img-thumb { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; }
+.empty-state {
+  text-align: center;
+  padding: 56px 20px;
+  color: var(--muted);
+}
+.empty-state i { font-size: 44px; margin-bottom: 14px; display: block; opacity: .25; }
+</style>
+{% block extra_head %}{% endblock %}
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+
+  <!-- Logo -->
+  <div class="sidebar-logo">
+    <div class="logo-wrap">
+      <!-- Kavalakat K icon SVG -->
+      <svg class="logo-icon" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="3" y="3" width="54" height="54" rx="4" stroke="#0160b2" stroke-width="3" fill="none"/>
+        <rect x="8" y="8" width="44" height="44" rx="2" stroke="#0160b2" stroke-width="1.5" fill="none" opacity="0.4"/>
+        <!-- K shape -->
+        <path d="M18 14 L18 46" stroke="#0160b2" stroke-width="4" stroke-linecap="round"/>
+        <path d="M18 30 L38 14" stroke="#0160b2" stroke-width="4" stroke-linecap="round"/>
+        <path d="M18 30 L38 46" stroke="#0160b2" stroke-width="4" stroke-linecap="round"/>
+        <!-- V cut in K -->
+        <path d="M26 22 L32 30 L26 38" stroke="#0d1420" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div class="logo-text-wrap">
+        <div class="logo-name">Kavalakat</div>
+        <div class="logo-sub">Content Management</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navigation -->
+  <nav class="sidebar-nav">
+    <div class="nav-section">Overview</div>
+    <a href="{% url 'dashboard:home' %}" class="nav-item {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+      <i class="fa-solid fa-chart-pie"></i> Dashboard
+    </a>
+
+    <div class="nav-section">Content</div>
+    <a href="{% url 'dashboard:pages_list' %}" class="nav-item {% if 'pages' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="fa-solid fa-file-lines"></i> Pages
+    </a>
+    <a href="{% url 'dashboard:blog_list' %}" class="nav-item {% if 'blog' in request.resolver_match.url_name and 'categor' not in request.resolver_match.url_name %}active{% endif %}">
+      <i class="fa-solid fa-newspaper"></i> Blog Posts
+    </a>
+    <a href="{% url 'dashboard:blog_categories' %}" class="nav-item {% if 'blog_categor' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="fa-solid fa-tags"></i> Blog Categories
+    </a>
+
+    <div class="nav-section">Business</div>
+    <a href="{% url 'dashboard:portfolio_list' %}" class="nav-item {% if 'portfolio' in request.resolver_match.url_name and 'cat' not in request.resolver_match.url_name %}active{% endif %}">
+      <i class="fa-solid fa-briefcase"></i> Portfolio Items
+    </a>
+    <a href="{% url 'dashboard:portfolio_categories' %}" class="nav-item {% if 'portfolio_cat' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="fa-solid fa-layer-group"></i> Portfolio Categories
+    </a>
+    <a href="{% url 'dashboard:careers_list' %}" class="nav-item {% if 'career' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="fa-solid fa-user-tie"></i> Careers
+    </a>
+    <a href="{% url 'dashboard:enquiry_list' %}" class="nav-item {% if 'enquiry' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="fa-solid fa-envelope"></i> Enquiries
+      {% if new_enquiry_count %}<span class="nav-badge">{{ new_enquiry_count }}</span>{% endif %}
+    </a>
+
+    <div class="nav-section">Settings</div>
+    <a href="{% url 'dashboard:about_info' %}" class="nav-item {% if request.resolver_match.url_name == 'about_info' %}active{% endif %}">
+      <i class="fa-solid fa-building"></i> About
+    </a>
+    <a href="{% url 'dashboard:gallery_list' %}" class="nav-item {% if 'gallery' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="fa-solid fa-images"></i> Gallery
+    </a>
+    <a href="{% url 'dashboard:contact_info' %}" class="nav-item {% if 'contact' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="fa-solid fa-phone"></i> Contact Info
+    </a>
+  </nav>
+
+  <!-- User footer -->
+  <div class="sidebar-footer">
+    <div class="user-chip">
+      <div class="user-avatar">{{ request.user.username|first|upper }}</div>
+      <div>
+        <div class="user-name">{{ request.user.get_full_name|default:request.user.username }}</div>
+        <div class="user-role">Administrator</div>
+      </div>
+      <a href="{% url 'dashboard:logout' %}" class="logout-btn" title="Logout">
+        <i class="fa-solid fa-right-from-bracket"></i>
+      </a>
+    </div>
+  </div>
+
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-title">{{ page_title }}</div>
+    <div class="topbar-actions">
+      {% block topbar_actions %}{% endblock %}
+    </div>
+  </header>
+
+  <div class="content">
+    {% for message in messages %}
+      <div class="alert {% if message.tags == 'error' %}alert-error{% else %}alert-success{% endif %}">
+        <i class="fa-solid {% if message.tags == 'error' %}fa-circle-xmark{% else %}fa-circle-check{% endif %}"></i>
+        {{ message }}
+      </div>
+    {% endfor %}
+
+    {% block content %}{% endblock %}
+  </div>
+</div>
+
+<script>
+function toggleField(model, pk, field, el) {
+  fetch('{% url "dashboard:ajax_toggle" %}', {
+    method: 'POST',
+    headers: {
+      'X-CSRFToken': '{{ csrf_token }}',
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: `model=${model}&pk=${pk}&field=${field}`
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.ok) {
+      const cb = el.querySelector('input[type=checkbox]');
+      if (cb) cb.checked = data.value;
+    }
+  });
+}
+</script>
+{% block extra_js %}{% endblock %}
+</body>
+</html>

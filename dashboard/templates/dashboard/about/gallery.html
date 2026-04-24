@@ -1,0 +1,74 @@
+{% extends 'dashboard/base.html' %}
+{% block content %}
+
+<!-- Upload Form -->
+<div class="card mb-6">
+  <div class="card-header"><span class="card-title">Upload New Image</span></div>
+  <div class="card-body">
+    <form method="post" enctype="multipart/form-data" action="{% url 'dashboard:gallery_upload' %}">
+      {% csrf_token %}
+      <div style="display:grid;grid-template-columns:1fr 1fr 120px 120px auto;gap:14px;align-items:end;">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Image *</label>
+          <input type="file" name="image" class="form-control" accept="image/*" required/>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Title</label>
+          <input type="text" name="title" class="form-control" placeholder="Caption title…"/>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Order</label>
+          <input type="number" name="order" class="form-control" value="0"/>
+        </div>
+        <div class="form-group" style="margin:0;padding-top:28px;">
+          <div class="form-check">
+            <input type="checkbox" name="is_active" id="active" checked/>
+            <label for="active">Active</label>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="height:42px;">
+          <i class="fa-solid fa-upload"></i> Upload
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Gallery Grid -->
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Gallery Images</span>
+    <span class="text-muted text-sm">{{ items|length }} images</span>
+  </div>
+  <div class="card-body">
+    {% if items %}
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;">
+      {% for img in items %}
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:10px;overflow:hidden;position:relative;">
+        <img src="{{ img.image.url }}" style="width:100%;height:160px;object-fit:cover;display:block;"/>
+        <div style="padding:10px 12px;">
+          <div style="font-size:13px;font-weight:600;margin-bottom:4px;">{{ img.title|default:"Untitled" }}</div>
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <span class="badge {% if img.is_active %}badge-green{% else %}badge-gray{% endif %}">
+              {% if img.is_active %}Active{% else %}Hidden{% endif %}
+            </span>
+            <a href="{% url 'dashboard:gallery_delete' img.pk %}"
+               class="btn btn-danger btn-sm btn-icon"
+               onclick="return confirm('Delete this image?')"
+               title="Delete">
+              <i class="fa-solid fa-trash"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+      <i class="fa-solid fa-images"></i>
+      No images uploaded yet. Use the form above to upload.
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
