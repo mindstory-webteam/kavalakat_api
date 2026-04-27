@@ -1,3 +1,8 @@
+# 
+
+
+# --------------------------------------------------------
+
 import os
 from pathlib import Path
 from datetime import timedelta
@@ -68,12 +73,16 @@ TEMPLATES = [
 WSGI_APPLICATION = 'kavalakat.wsgi.application'
 
 # ── Database ──────────────────────────────────────────────────────────────────
-
+# LOCAL:      reads from .env file → postgresql://kavalakat_user1:kavalakat@localhost:5432/kavalakat_new
+# RENDER:     reads from Render environment variable → postgresql://kavalakat_user:xxx@dpg-xxx/kavalakat
 DATABASE_URL = os.environ.get(
     'DATABASE_URL',
     'postgresql://kavalakat_user1:kavalakat@localhost:5432/kavalakat_new'
 )
-DATABASES = {'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)}
+
+DATABASES = {
+    'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+}
 
 # ── Auth ──────────────────────────────────────────────────────────────────────
 AUTH_PASSWORD_VALIDATORS = [
