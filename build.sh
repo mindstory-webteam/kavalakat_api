@@ -1,39 +1,22 @@
 #!/usr/bin/env bash
-set -o errexit
 
-echo "========================================="
-echo "=== Step 1: Installing dependencies  ==="
-echo "========================================="
+echo "📦 Installing dependencies..."
 pip install -r requirements.txt
 
-echo "========================================="
-echo "=== Step 2: Collecting static files  ==="
-echo "========================================="
-python manage.py collectstatic --no-input
+echo "📁 Running migrations..."
+python manage.py migrate
 
-echo "========================================="
-echo "=== Step 3: Running migrations        ==="
-echo "========================================="
-python manage.py migrate --run-syncdb
-
-echo "========================================="
-echo "=== Step 4: Creating superuser        ==="
-echo "========================================="
-python manage.py shell << 'PYEOF'
+echo "👤 Creating superuser if not exists..."
+python manage.py shell << END
 from django.contrib.auth import get_user_model
 User = get_user_model()
-if not User.objects.filter(username='admin').exists():
-    User.objects.create_superuser('admin', 'admin@kavalakat.com', 'Admin@1234')
-    print('SUCCESS: Superuser created — username: admin / password: Admin@1234')
+
+if not User.objects.filter(username="admin").exists():
+    User.objects.create_superuser("admin", "admin@gmail.com", "admin123")
+    print("Superuser created")
 else:
-    print('INFO: Superuser already exists')
-PYEOF
+    print("Superuser already exists")
+END
 
-echo "========================================="
-echo "=== Step 5: Seeding portfolio data    ==="
-echo "========================================="
-python manage.py seed_portfolio || echo "Portfolio already seeded or seed command not found"
-
-echo "========================================="
-echo "=== BUILD COMPLETE — Server starting  ==="
-echo "========================================="
+echo "🚀 Starting server..."
+gunicorn kavalakat.wsgi:application
