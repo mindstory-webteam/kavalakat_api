@@ -10,11 +10,13 @@ class ItemSerializer(serializers.ModelSerializer):
     class Meta:
         model  = Item
         fields = [
-            'id', 'name', 'slug', 'description', 'image', 'image_url',
+            'id', 'name', 'description', 'image', 'image_url',
             'tags', 'category', 'category_name', 'category_slug',
             'is_featured', 'is_active', 'order', 'created_at', 'updated_at',
+            # ↑ removed 'slug' — Item model does not have this field
         ]
-        read_only_fields = ['id', 'slug', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'created_at', 'updated_at']
+        # ↑ removed 'slug' from read_only_fields too
 
     def get_image_url(self, obj):
         req = self.context.get('request')
@@ -35,9 +37,10 @@ class CategorySerializer(serializers.ModelSerializer):
         model  = Category
         fields = [
             'id', 'name', 'slug', 'description', 'icon',
-            'order', 'is_active', 'item_count', 'items', 'created_at',
+            'order', 'is_active', 'item_count', 'items',
+            # ↑ removed 'created_at' — Category model does not have this field
         ]
-        read_only_fields = ['id', 'slug', 'created_at']
+        read_only_fields = ['id', 'slug']
 
     def validate_name(self, value):
         if len(value.strip()) < 2:
