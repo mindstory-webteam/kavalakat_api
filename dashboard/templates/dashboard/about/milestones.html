@@ -1,0 +1,138 @@
+{% extends 'dashboard/base.html' %}
+{% block content %}
+
+<div style="display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;">
+  <a href="{% url 'dashboard:about_info' %}"      class="btn btn-secondary btn-sm">🏢 About</a>
+  <a href="{% url 'dashboard:strengths_list' %}"  class="btn btn-secondary btn-sm">💪 Strengths</a>
+  <a href="{% url 'dashboard:milestones_list' %}" class="btn btn-primary btn-sm">🕐 Milestones</a>
+  <a href="{% url 'dashboard:team_list' %}"       class="btn btn-secondary btn-sm">👥 Team</a>
+  <a href="{% url 'dashboard:gallery_list' %}"    class="btn btn-secondary btn-sm">🖼️ Gallery</a>
+</div>
+
+<!-- Quick-add form -->
+<div class="card mb-6">
+  <div class="card-header"><span class="card-title">Add New Milestone</span></div>
+  <div class="card-body">
+    <form method="post" enctype="multipart/form-data" action="{% url 'dashboard:milestone_create' %}">
+      {% csrf_token %}
+      <div style="display:grid;grid-template-columns:100px 1fr 1fr;gap:14px;">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Year *</label>
+          <input type="number" name="year" class="form-control" required
+            placeholder="1976" min="1900" max="2100"/>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Title *</label>
+          <input type="text" name="title" class="form-control" required
+            placeholder="e.g. The Beginning"/>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Tags <span class="text-muted">(comma-separated)</span></label>
+          <input type="text" name="tags" class="form-control"
+            placeholder="e.g. Cement, Thrissur"/>
+        </div>
+        <div class="form-group" style="margin:0;grid-column:1/-1;">
+          <label class="form-label">Description *</label>
+          <textarea name="description" class="form-control" rows="2" required
+            placeholder="Established 'Kavalakat Traders' for cement trading…"></textarea>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Image</label>
+          <input type="file" name="image" class="form-control" accept="image/*"/>
+        </div>
+        <div style="display:flex;gap:14px;align-items:flex-end;grid-column:2/-1;">
+          <div class="form-group" style="margin:0;width:100px;">
+            <label class="form-label">Order</label>
+            <input type="number" name="order" class="form-control" value="0"/>
+          </div>
+          <button type="submit" class="btn btn-primary" style="height:42px;white-space:nowrap;">
+            <i class="fa-solid fa-plus"></i> Add Milestone
+          </button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Timeline list -->
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">All Milestones</span>
+    <span class="text-muted text-sm">{{ items|length }} entries</span>
+  </div>
+  <div class="card-body" style="padding:0;">
+    {% if items %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th style="width:40px;">#</th>
+          <th style="width:70px;">Year</th>
+          <th style="width:90px;">Image</th>
+          <th>Title</th>
+          <th>Description</th>
+          <th>Tags</th>
+          <th style="width:60px;">Order</th>
+          <th style="width:90px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for item in items %}
+        <tr>
+          <td class="text-muted">{{ forloop.counter }}</td>
+          <td>
+            <span style="display:inline-block;background:var(--primary);color:#fff;
+              font-weight:700;font-size:13px;padding:3px 10px;border-radius:20px;">
+              {{ item.year }}
+            </span>
+          </td>
+          <td>
+            {% if item.image %}
+            <img src="{{ item.image.url }}"
+              style="width:64px;height:48px;object-fit:cover;border-radius:6px;"/>
+            {% else %}
+            <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td style="font-weight:600;">{{ item.title|default:"—" }}</td>
+          <td class="text-muted"
+            style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            {{ item.description }}
+          </td>
+          <td>
+            {% for tag in item.tags_list %}
+            <span style="display:inline-block;background:var(--surface2);border:1px solid var(--border);
+              font-size:11px;padding:2px 8px;border-radius:20px;margin:2px 2px 0 0;">
+              {{ tag }}
+            </span>
+            {% empty %}
+            <span class="text-muted">—</span>
+            {% endfor %}
+          </td>
+          <td>{{ item.order }}</td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <a href="{% url 'dashboard:milestone_edit' item.pk %}"
+                class="btn btn-secondary btn-sm btn-icon" title="Edit">
+                <i class="fa-solid fa-pen"></i>
+              </a>
+              <a href="{% url 'dashboard:milestone_delete' item.pk %}"
+                class="btn btn-danger btn-sm btn-icon"
+                onclick="return confirm('Delete this milestone?')" title="Delete">
+                <i class="fa-solid fa-trash"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+      <i class="fa-solid fa-clock-rotate-left"></i>
+      No milestones yet. Use the form above to add your first one.
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

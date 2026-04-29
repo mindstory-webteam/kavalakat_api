@@ -50,30 +50,22 @@ body {
   z-index: 100;
   overflow-y: auto;
 }
+.sidebar::-webkit-scrollbar { width: 4px; }
+.sidebar::-webkit-scrollbar-track { background: transparent; }
+.sidebar::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
 .sidebar-logo {
   padding: 20px 18px 16px;
   border-bottom: 1px solid var(--border);
   background: linear-gradient(135deg, #0a0e1a 0%, #0d1420 100%);
 }
-.logo-wrap {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-.logo-icon {
-  width: 38px;
-  height: 38px;
-  flex-shrink: 0;
-}
-.logo-text-wrap {
-  display: flex;
-  flex-direction: column;
-}
+.logo-wrap { display: flex; align-items: center; gap: 10px; }
+.logo-icon { width: 38px; height: 38px; flex-shrink: 0; }
+.logo-text-wrap { display: flex; flex-direction: column; }
 .logo-name {
   font-family: var(--font-head);
   font-size: 17px;
   font-weight: 800;
-  {% comment %} color: #0160b2; {% endcomment %}
   letter-spacing: 1px;
   line-height: 1;
 }
@@ -81,9 +73,10 @@ body {
   font-size: 9px;
   text-transform: uppercase;
   letter-spacing: 2px;
-  {% comment %} color: var(--muted); {% endcomment %}
   margin-top: 3px;
 }
+
+/* ── NAV ── */
 .sidebar-nav { flex: 1; padding: 14px 0; }
 .nav-section {
   font-size: 9px;
@@ -122,16 +115,35 @@ body {
   padding: 2px 6px;
   border-radius: 99px;
 }
+
+/* ── NAV SUB-ITEM ── */
+.nav-sub-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 20px 7px 38px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 500;
+  border-left: 3px solid transparent;
+  transition: all 0.15s;
+}
+.nav-sub-item:hover { color: var(--text); background: var(--surface2); }
+.nav-sub-item.active {
+  color: #4da3ff;
+  border-left-color: #0160b2;
+  background: rgba(1,96,178,.10);
+}
+.nav-sub-item i { width: 14px; text-align: center; font-size: 11px; }
+
+/* ── SIDEBAR FOOTER ── */
 .sidebar-footer {
   padding: 14px 18px;
   border-top: 1px solid var(--border);
   background: linear-gradient(135deg, #0a0e1a 0%, #0d1420 100%);
 }
-.user-chip {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
+.user-chip { display: flex; align-items: center; gap: 10px; }
 .user-avatar {
   width: 32px; height: 32px;
   border-radius: 50%;
@@ -258,14 +270,14 @@ body {
   transition: all .15s;
   white-space: nowrap;
 }
-.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary   { background: var(--accent); color: #fff; }
 .btn-primary:hover { background: var(--accent2); }
 .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
 .btn-secondary:hover { border-color: var(--accent); color: #4da3ff; }
-.btn-danger { background: rgba(239,68,68,.12); color: var(--danger); border: 1px solid rgba(239,68,68,.25); }
+.btn-danger    { background: rgba(239,68,68,.12); color: var(--danger); border: 1px solid rgba(239,68,68,.25); }
 .btn-danger:hover { background: rgba(239,68,68,.22); }
-.btn-success { background: rgba(34,197,94,.12); color: var(--success); border: 1px solid rgba(34,197,94,.25); }
-.btn-sm { padding: 5px 10px; font-size: 12px; }
+.btn-success   { background: rgba(34,197,94,.12); color: var(--success); border: 1px solid rgba(34,197,94,.25); }
+.btn-sm   { padding: 5px 10px; font-size: 12px; }
 .btn-icon { padding: 6px; border-radius: 7px; }
 
 /* ── TABLE ── */
@@ -330,9 +342,11 @@ tr:hover td { background: var(--surface2); }
 }
 .form-control:focus { outline: none; border-color: var(--accent); }
 textarea.form-control { min-height: 120px; resize: vertical; }
+select.form-control { cursor: pointer; }
+select.form-control option { background: var(--surface2); color: var(--text); }
 .form-check { display: flex; align-items: center; gap: 10px; }
 .form-check input[type=checkbox] { width: 16px; height: 16px; accent-color: var(--accent); }
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.form-grid   { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
 
 /* ── SEARCH BAR ── */
@@ -407,21 +421,18 @@ textarea.form-control { min-height: 120px; resize: vertical; }
 </head>
 <body>
 
-<!-- SIDEBAR -->
+<!-- ═══════════════════════════════════════════ SIDEBAR -->
 <aside class="sidebar">
 
   <!-- Logo -->
   <div class="sidebar-logo">
     <div class="logo-wrap">
-      <!-- Kavalakat K icon SVG -->
       <svg class="logo-icon" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
         <rect x="3" y="3" width="54" height="54" rx="4" stroke="#0160b2" stroke-width="3" fill="none"/>
         <rect x="8" y="8" width="44" height="44" rx="2" stroke="#0160b2" stroke-width="1.5" fill="none" opacity="0.4"/>
-        <!-- K shape -->
         <path d="M18 14 L18 46" stroke="#0160b2" stroke-width="4" stroke-linecap="round"/>
         <path d="M18 30 L38 14" stroke="#0160b2" stroke-width="4" stroke-linecap="round"/>
         <path d="M18 30 L38 46" stroke="#0160b2" stroke-width="4" stroke-linecap="round"/>
-        <!-- V cut in K -->
         <path d="M26 22 L32 30 L26 38" stroke="#0d1420" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
       <div class="logo-text-wrap">
@@ -433,47 +444,87 @@ textarea.form-control { min-height: 120px; resize: vertical; }
 
   <!-- Navigation -->
   <nav class="sidebar-nav">
+
+    <!-- OVERVIEW -->
     <div class="nav-section">Overview</div>
-    <a href="{% url 'dashboard:home' %}" class="nav-item {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+    <a href="{% url 'dashboard:home' %}"
+       class="nav-item {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
       <i class="fa-solid fa-chart-pie"></i> Dashboard
     </a>
 
+    <!-- CONTENT -->
     <div class="nav-section">Content</div>
-    <a href="{% url 'dashboard:pages_list' %}" class="nav-item {% if 'pages' in request.resolver_match.url_name %}active{% endif %}">
+    <a href="{% url 'dashboard:pages_list' %}"
+       class="nav-item {% if 'pages' in request.resolver_match.url_name %}active{% endif %}">
       <i class="fa-solid fa-file-lines"></i> Pages
     </a>
-    <a href="{% url 'dashboard:blog_list' %}" class="nav-item {% if 'blog' in request.resolver_match.url_name and 'categor' not in request.resolver_match.url_name %}active{% endif %}">
+    <a href="{% url 'dashboard:blog_list' %}"
+       class="nav-item {% if 'blog' in request.resolver_match.url_name and 'categor' not in request.resolver_match.url_name %}active{% endif %}">
       <i class="fa-solid fa-newspaper"></i> Blog Posts
     </a>
-    <a href="{% url 'dashboard:blog_categories' %}" class="nav-item {% if 'blog_categor' in request.resolver_match.url_name %}active{% endif %}">
+    <a href="{% url 'dashboard:blog_categories' %}"
+       class="nav-item {% if 'blog_categor' in request.resolver_match.url_name %}active{% endif %}">
       <i class="fa-solid fa-tags"></i> Blog Categories
     </a>
 
+    <!-- BUSINESS -->
     <div class="nav-section">Business</div>
-    <a href="{% url 'dashboard:portfolio_list' %}" class="nav-item {% if 'portfolio' in request.resolver_match.url_name and 'cat' not in request.resolver_match.url_name %}active{% endif %}">
+    <a href="{% url 'dashboard:portfolio_list' %}"
+       class="nav-item {% if 'portfolio' in request.resolver_match.url_name and 'cat' not in request.resolver_match.url_name %}active{% endif %}">
       <i class="fa-solid fa-briefcase"></i> Portfolio Items
     </a>
-    <a href="{% url 'dashboard:portfolio_categories' %}" class="nav-item {% if 'portfolio_cat' in request.resolver_match.url_name %}active{% endif %}">
+    <a href="{% url 'dashboard:portfolio_categories' %}"
+       class="nav-item {% if 'portfolio_cat' in request.resolver_match.url_name %}active{% endif %}">
       <i class="fa-solid fa-layer-group"></i> Portfolio Categories
     </a>
-    <a href="{% url 'dashboard:careers_list' %}" class="nav-item {% if 'career' in request.resolver_match.url_name %}active{% endif %}">
+    <a href="{% url 'dashboard:careers_list' %}"
+       class="nav-item {% if 'career' in request.resolver_match.url_name %}active{% endif %}">
       <i class="fa-solid fa-user-tie"></i> Careers
     </a>
-    <a href="{% url 'dashboard:enquiry_list' %}" class="nav-item {% if 'enquiry' in request.resolver_match.url_name %}active{% endif %}">
+    <a href="{% url 'dashboard:enquiry_list' %}"
+       class="nav-item {% if 'enquiry' in request.resolver_match.url_name %}active{% endif %}">
       <i class="fa-solid fa-envelope"></i> Enquiries
       {% if new_enquiry_count %}<span class="nav-badge">{{ new_enquiry_count }}</span>{% endif %}
     </a>
 
+    <!-- SETTINGS -->
     <div class="nav-section">Settings</div>
-    <a href="{% url 'dashboard:about_info' %}" class="nav-item {% if request.resolver_match.url_name == 'about_info' %}active{% endif %}">
+
+    <a href="{% url 'dashboard:about_info' %}"
+       class="nav-item {% if request.resolver_match.url_name == 'about_info' %}active{% endif %}">
       <i class="fa-solid fa-building"></i> About
     </a>
-    <a href="{% url 'dashboard:gallery_list' %}" class="nav-item {% if 'gallery' in request.resolver_match.url_name %}active{% endif %}">
+
+    <a href="{% url 'dashboard:strengths_list' %}"
+       class="nav-sub-item {% if 'strength' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="fa-solid fa-list-check"></i> Strengths
+    </a>
+
+    <a href="{% url 'dashboard:milestones_list' %}"
+       class="nav-sub-item {% if 'milestone' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="fa-solid fa-clock-rotate-left"></i> Milestones
+    </a>
+
+    <a href="{% url 'dashboard:projects_list' %}"
+       class="nav-sub-item {% if 'project' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="fa-solid fa-hard-hat"></i> Projects
+    </a>
+
+    <a href="{% url 'dashboard:team_list' %}"
+       class="nav-sub-item {% if 'team' in request.resolver_match.url_name %}active{% endif %}">
+      <i class="fa-solid fa-users"></i> Team
+    </a>
+
+    <a href="{% url 'dashboard:gallery_list' %}"
+       class="nav-sub-item {% if 'gallery' in request.resolver_match.url_name %}active{% endif %}">
       <i class="fa-solid fa-images"></i> Gallery
     </a>
-    <a href="{% url 'dashboard:contact_info' %}" class="nav-item {% if 'contact' in request.resolver_match.url_name %}active{% endif %}">
+
+    <a href="{% url 'dashboard:contact_info' %}"
+       class="nav-item {% if 'contact' in request.resolver_match.url_name %}active{% endif %}">
       <i class="fa-solid fa-phone"></i> Contact Info
     </a>
+
   </nav>
 
   <!-- User footer -->
@@ -492,7 +543,7 @@ textarea.form-control { min-height: 120px; resize: vertical; }
 
 </aside>
 
-<!-- MAIN -->
+<!-- ═══════════════════════════════════════════ MAIN -->
 <div class="main">
   <header class="topbar">
     <div class="topbar-title">{{ page_title }}</div>

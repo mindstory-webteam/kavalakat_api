@@ -1,0 +1,190 @@
+{% extends 'dashboard/base.html' %}
+{% block topbar_actions %}
+  <a href="{% url 'dashboard:project_create' %}" class="btn btn-primary btn-sm">
+    <i class="fa-solid fa-plus"></i> Add Project
+  </a>
+{% endblock %}
+
+{% block content %}
+
+<!-- Sub-nav -->
+<div style="display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;">
+  <a href="{% url 'dashboard:about_info' %}"      class="btn btn-secondary btn-sm">🏢 About</a>
+  <a href="{% url 'dashboard:strengths_list' %}"  class="btn btn-secondary btn-sm">💪 Strengths</a>
+  <a href="{% url 'dashboard:milestones_list' %}" class="btn btn-secondary btn-sm">🕐 Milestones</a>
+  <a href="{% url 'dashboard:projects_list' %}"   class="btn btn-primary btn-sm">🏗️ Projects</a>
+  <a href="{% url 'dashboard:team_list' %}"       class="btn btn-secondary btn-sm">👥 Team</a>
+  <a href="{% url 'dashboard:gallery_list' %}"    class="btn btn-secondary btn-sm">🖼️ Gallery</a>
+</div>
+
+<!-- Filters -->
+<div class="card mb-6">
+  <div class="card-body" style="padding:14px 20px;">
+    <form method="get" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+      <div class="search-bar">
+        <i class="fa-solid fa-magnifying-glass"></i>
+        <input type="text" name="search" value="{{ search }}" placeholder="Search title, client, tag…"/>
+      </div>
+      <select name="featured" class="form-control" style="width:160px;">
+        <option value="">All Projects</option>
+        <option value="1" {% if featured == '1' %}selected{% endif %}>Featured Only</option>
+        <option value="0" {% if featured == '0' %}selected{% endif %}>Not Featured</option>
+      </select>
+      <button type="submit" class="btn btn-secondary btn-sm">
+        <i class="fa-solid fa-filter"></i> Filter
+      </button>
+      {% if search or featured %}
+      <a href="{% url 'dashboard:projects_list' %}" class="btn btn-secondary btn-sm">
+        <i class="fa-solid fa-xmark"></i> Clear
+      </a>
+      {% endif %}
+    </form>
+  </div>
+</div>
+
+<!-- Table -->
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">All Projects</span>
+    <span class="text-muted text-sm">{{ items.paginator.count }} total</span>
+  </div>
+  <div class="card-body" style="padding:0;">
+    {% if items %}
+    <table class="table">
+      <thead>
+        <tr>
+          <th style="width:60px;">Image</th>
+          <th>Title</th>
+          <th>Client</th>
+          <th style="width:100px;">Tag</th>
+          <th style="width:60px;">Year</th>
+          <th style="width:80px;">Featured</th>
+          <th style="width:90px;">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for project in items %}
+        <tr>
+          <td>
+            {% if project.image %}
+            <img src="{{ project.image.url }}"
+              style="width:52px;height:40px;object-fit:cover;border-radius:6px;display:block;"/>
+            {% else %}
+            <div style="width:52px;height:40px;border-radius:6px;background:var(--surface2);
+              border:1px solid var(--border);display:flex;align-items:center;
+              justify-content:center;color:var(--muted);">
+              <i class="fa-solid fa-image" style="font-size:14px;"></i>
+            </div>
+            {% endif %}
+          </td>
+          <td>
+            <div style="font-weight:600;font-size:13px;">{{ project.title }}</div>
+            {% if project.client_location %}
+            <div style="font-size:11px;color:var(--muted);margin-top:2px;">
+              <i class="fa-solid fa-location-dot" style="font-size:10px;"></i>
+              {{ project.client_location }}
+            </div>
+            {% endif %}
+          </td>
+          <td>
+            <div style="display:flex;align-items:center;gap:8px;">
+              {% if project.client_logo %}
+              <img src="{{ project.client_logo.url }}"
+                style="width:28px;height:28px;border-radius:5px;object-fit:contain;
+                  background:#fff;padding:2px;border:1px solid var(--border);flex-shrink:0;"/>
+              {% endif %}
+              <span style="font-size:13px;">{{ project.client|default:"—" }}</span>
+            </div>
+          </td>
+          <td>
+            {% if project.tag %}
+            <span style="display:inline-block;background:rgba(1,96,178,.15);color:#4da3ff;
+              font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;
+              padding:3px 9px;border-radius:20px;">
+              {{ project.tag }}
+            </span>
+            {% else %}
+            <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if project.year %}
+            <span class="badge badge-gray">{{ project.year }}</span>
+            {% else %}
+            <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if project.is_featured %}
+            <span class="badge badge-yellow">★ Featured</span>
+            {% else %}
+            <span class="badge badge-gray">No</span>
+            {% endif %}
+          </td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <a href="{% url 'dashboard:project_edit' project.pk %}"
+                class="btn btn-secondary btn-sm btn-icon" title="Edit">
+                <i class="fa-solid fa-pen"></i>
+              </a>
+              <a href="{% url 'dashboard:project_delete' project.pk %}"
+                class="btn btn-danger btn-sm btn-icon"
+                onclick="return confirm('Delete this project?')" title="Delete">
+                <i class="fa-solid fa-trash"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <!-- Pagination -->
+    {% if items.has_other_pages %}
+    <div class="pagination" style="padding:14px 20px;">
+      {% if items.has_previous %}
+      <a href="?page={{ items.previous_page_number }}&search={{ search }}&featured={{ featured }}">
+        <i class="fa-solid fa-chevron-left"></i>
+      </a>
+      {% endif %}
+      {% for num in items.paginator.page_range %}
+        {% if items.number == num %}
+        <span class="current">{{ num }}</span>
+        {% elif num > items.number|add:'-3' and num < items.number|add:'3' %}
+        <a href="?page={{ num }}&search={{ search }}&featured={{ featured }}">{{ num }}</a>
+        {% endif %}
+      {% endfor %}
+      {% if items.has_next %}
+      <a href="?page={{ items.next_page_number }}&search={{ search }}&featured={{ featured }}">
+        <i class="fa-solid fa-chevron-right"></i>
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+
+    {% else %}
+
+    <!-- Empty state -->
+    <div class="empty-state">
+      <i class="fa-solid fa-hard-hat"></i>
+      <div style="font-size:15px;font-weight:600;color:var(--text);margin-bottom:6px;">
+        No projects found
+      </div>
+      <div style="font-size:13px;color:var(--muted);margin-bottom:20px;">
+        Add your first project to display it on the website.
+      </div>
+      <a href="{% url 'dashboard:project_create' %}"
+        style="display:inline-flex;align-items:center;justify-content:center;
+          gap:6px;background:var(--accent);color:#fff;font-size:13px;
+          font-weight:600;padding:10px 20px;border-radius:8px;
+          text-decoration:none;line-height:1;">
+        <i class="fa-solid fa-plus" style="font-size:11px;line-height:1;"></i>
+        <span>Add First Project</span>
+      </a>
+    </div>
+
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends 'dashboard/base.html' %}
+{% block content %}
+<div style="max-width:680px;">
+
+  <div style="margin-bottom:20px;">
+    <a href="{% url 'dashboard:projects_list' %}" class="btn btn-secondary btn-sm">
+      <i class="fa-solid fa-arrow-left"></i> Back to Projects
+    </a>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">{{ page_title }}</span>
+    </div>
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div style="display:flex;flex-direction:column;gap:16px;">
+
+          <!-- Title + Tag -->
+          <div class="form-grid">
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Project Title *</label>
+              <input type="text" name="title" class="form-control"
+                value="{{ obj.title|default:'' }}" required
+                placeholder="e.g. Kochi Metro Rail Phase 1"/>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Image Badge Tag</label>
+              <input type="text" name="tag" class="form-control"
+                value="{{ obj.tag|default:'' }}"
+                placeholder="e.g. PHASE 1, THRISSUR"/>
+            </div>
+          </div>
+
+          <!-- Description -->
+          <div class="form-group" style="margin:0;">
+            <label class="form-label">Description *</label>
+            <textarea name="description" class="form-control" rows="4" required
+              placeholder="Brief description of the project…">{{ obj.description|default:'' }}</textarea>
+          </div>
+
+          <!-- Project Image -->
+          <div class="form-group" style="margin:0;">
+            <label class="form-label">Project Image</label>
+            {% if obj.image %}
+            <div style="margin-bottom:10px;">
+              <img src="{{ obj.image.url }}"
+                style="width:100%;max-height:180px;object-fit:cover;
+                  border-radius:8px;border:1px solid var(--border);display:block;"/>
+            </div>
+            {% endif %}
+            <input type="file" name="image" class="form-control" accept="image/*"/>
+          </div>
+
+          <!-- Year + Location -->
+          <div class="form-grid">
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Year</label>
+              <input type="number" name="year" class="form-control"
+                value="{{ obj.year|default:'' }}"
+                placeholder="e.g. 2023" min="1900" max="2100"/>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Location</label>
+              <input type="text" name="location" class="form-control"
+                value="{{ obj.location|default:'' }}"
+                placeholder="e.g. Kochi, Kerala"/>
+            </div>
+          </div>
+
+          <!-- Divider -->
+          <div style="border-top:1px solid var(--border);padding-top:4px;">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;
+              letter-spacing:.8px;color:var(--muted);margin-bottom:14px;">
+              Client Information
+            </div>
+            <div class="form-grid">
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Client Name</label>
+                <input type="text" name="client" class="form-control"
+                  value="{{ obj.client|default:'' }}"
+                  placeholder="e.g. Kochi Metro Rail Ltd"/>
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Client Location</label>
+                <input type="text" name="client_location" class="form-control"
+                  value="{{ obj.client_location|default:'' }}"
+                  placeholder="e.g. Kochi, Kerala"/>
+              </div>
+            </div>
+            <div class="form-group" style="margin:0;margin-top:16px;">
+              <label class="form-label">Client Logo</label>
+              {% if obj.client_logo %}
+              <div style="margin-bottom:10px;display:flex;align-items:center;gap:10px;">
+                <img src="{{ obj.client_logo.url }}"
+                  style="width:50px;height:50px;border-radius:8px;object-fit:contain;
+                    background:#fff;padding:4px;border:1px solid var(--border);"/>
+                <span class="text-muted text-sm">Upload new to replace</span>
+              </div>
+              {% endif %}
+              <input type="file" name="client_logo" class="form-control" accept="image/*"/>
+            </div>
+          </div>
+
+          <!-- Divider -->
+          <div style="border-top:1px solid var(--border);padding-top:4px;">
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;
+              letter-spacing:.8px;color:var(--muted);margin-bottom:14px;">
+              Options
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">GET IN TOUCH URL</label>
+              <input type="url" name="contact_url" class="form-control"
+                value="{{ obj.contact_url|default:'' }}"
+                placeholder="https://…"/>
+            </div>
+            <div class="form-group" style="margin:0;margin-top:16px;">
+              <div class="form-check">
+                <input type="checkbox" name="is_featured" id="is_featured"
+                  {% if obj.is_featured %}checked{% endif %}/>
+                <label for="is_featured">Mark as Featured Project</label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Submit -->
+          <div style="display:flex;gap:10px;padding-top:8px;border-top:1px solid var(--border);">
+            <button type="submit" class="btn btn-primary" style="padding:11px 28px;">
+              <i class="fa-solid fa-floppy-disk"></i>
+              {% if obj %}Update Project{% else %}Create Project{% endif %}
+            </button>
+            <a href="{% url 'dashboard:projects_list' %}" class="btn btn-secondary"
+              style="padding:11px 20px;">
+              Cancel
+            </a>
+          </div>
+
+        </div>
+      </form>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

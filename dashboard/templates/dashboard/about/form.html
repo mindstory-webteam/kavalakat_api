@@ -1,16 +1,26 @@
 {% extends 'dashboard/base.html' %}
 {% block content %}
 <div style="max-width:760px;">
+
+  <div style="display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;">
+    <a href="{% url 'dashboard:about_info' %}"     class="btn btn-primary btn-sm">🏢 About Info</a>
+    <a href="{% url 'dashboard:strengths_list' %}" class="btn btn-secondary btn-sm">💪 Strengths</a>
+    <a href="{% url 'dashboard:team_list' %}"      class="btn btn-secondary btn-sm">👥 Team</a>
+    <a href="{% url 'dashboard:gallery_list' %}"   class="btn btn-secondary btn-sm">🖼️ Gallery</a>
+  </div>
+
   <form method="post">
     {% csrf_token %}
     <div style="display:flex;flex-direction:column;gap:16px;">
+
       <div class="card">
         <div class="card-header"><span class="card-title">🏢 Company Information</span></div>
         <div class="card-body">
           <div class="form-group">
             <label class="form-label">Company Title / Tagline *</label>
             <input type="text" name="title" class="form-control"
-              value="{{ obj.title|default:'' }}" required placeholder="e.g. Kavalakat – Your Trusted Cement Partner"/>
+              value="{{ obj.title|default:'' }}" required
+              placeholder="e.g. Kavalakat – Your Trusted Cement Partner"/>
           </div>
           <div class="form-group">
             <label class="form-label">Main Description</label>

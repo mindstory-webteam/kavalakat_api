@@ -1,0 +1,84 @@
+{% extends 'dashboard/base.html' %}
+{% block content %}
+<div style="max-width:640px;">
+  <div style="margin-bottom:20px;">
+    <a href="{% url 'dashboard:milestones_list' %}" class="btn btn-secondary btn-sm">
+      <i class="fa-solid fa-arrow-left"></i> Back to Milestones
+    </a>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">{{ page_title }}</span></div>
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div style="display:flex;flex-direction:column;gap:16px;">
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Year *</label>
+              <input type="number" name="year" class="form-control"
+                value="{{ obj.year|default:'' }}" required
+                placeholder="e.g. 1976" min="1900" max="2100"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Order</label>
+              <input type="number" name="order" class="form-control"
+                value="{{ obj.order|default:'0' }}"/>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Title *</label>
+            <input type="text" name="title" class="form-control"
+              value="{{ obj.title|default:'' }}" required
+              placeholder="e.g. The Beginning"/>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Description *</label>
+            <textarea name="description" class="form-control" rows="4" required
+              placeholder="Established 'Kavalakat Traders' for cement trading…">{{ obj.description|default:'' }}</textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Tags
+              <span class="text-muted" style="font-weight:400;">(comma-separated)</span>
+            </label>
+            <input type="text" name="tags" class="form-control"
+              value="{{ obj.tags|default:'' }}"
+              placeholder="e.g. Cement, Thrissur, Retail"/>
+            {% if obj.tags %}
+            <div style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;">
+              {% for tag in obj.tags_list %}
+              <span style="background:var(--surface2);border:1px solid var(--border);
+                font-size:12px;padding:3px 10px;border-radius:20px;">{{ tag }}</span>
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Timeline Image</label>
+            {% if obj.image %}
+            <div style="margin-bottom:10px;">
+              <img src="{{ obj.image.url }}"
+                style="max-width:260px;border-radius:8px;border:1px solid var(--border);"/>
+            </div>
+            {% endif %}
+            <input type="file" name="image" class="form-control" accept="image/*"/>
+          </div>
+
+          <div style="display:flex;gap:10px;padding-top:8px;">
+            <button type="submit" class="btn btn-primary" style="padding:12px 28px;">
+              <i class="fa-solid fa-floppy-disk"></i>
+              {% if obj %}Update Milestone{% else %}Add Milestone{% endif %}
+            </button>
+            <a href="{% url 'dashboard:milestones_list' %}" class="btn btn-secondary"
+              style="padding:12px 20px;">Cancel</a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

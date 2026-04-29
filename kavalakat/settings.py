@@ -11,13 +11,13 @@
 
 # load_dotenv()
 
-# BASE_DIR = Path(__file__).resolve().parent.parent
+# BASE_DIR   = Path(__file__).resolve().parent.parent
 # SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-me')
-# DEBUG = os.environ.get('DEBUG', 'True') == 'True'
+# DEBUG      = os.environ.get('DEBUG', 'True') == 'True'
 # ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 
-
+# # ── Installed Apps ────────────────────────────────────────────────────────────
 # INSTALLED_APPS = [
 #     'django.contrib.admin',
 #     'django.contrib.auth',
@@ -25,12 +25,15 @@
 #     'django.contrib.sessions',
 #     'django.contrib.messages',
 #     'django.contrib.staticfiles',
+
 #     # Third-party
 #     'rest_framework',
 #     'rest_framework_simplejwt',
 #     'rest_framework_simplejwt.token_blacklist',
 #     'corsheaders',
 #     'django_filters',
+#     'drf_spectacular',
+
 #     # Local apps
 #     'pages.apps.PagesConfig',
 #     'about.apps.AboutConfig',
@@ -41,6 +44,8 @@
 #     'dashboard.apps.DashboardConfig',
 # ]
 
+
+# # ── Middleware ────────────────────────────────────────────────────────────────
 # MIDDLEWARE = [
 #     'django.middleware.security.SecurityMiddleware',
 #     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -53,8 +58,11 @@
 #     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 # ]
 
-# ROOT_URLCONF = 'kavalakat.urls'
+# ROOT_URLCONF       = 'kavalakat.urls'
+# WSGI_APPLICATION   = 'kavalakat.wsgi.application'
 
+
+# # ── Templates ─────────────────────────────────────────────────────────────────
 # TEMPLATES = [
 #     {
 #         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -72,21 +80,18 @@
 #     },
 # ]
 
-# WSGI_APPLICATION = 'kavalakat.wsgi.application'
 
 # # ── Database ──────────────────────────────────────────────────────────────────
-# # LOCAL:      reads from .env file → postgresql://kavalakat_user1:kavalakat@localhost:5432/kavalakat_new
-# # RENDER:     reads from Render environment variable → postgresql://kavalakat_user:xxx@dpg-xxx/kavalakat
 # DATABASE_URL = os.environ.get(
 #     'DATABASE_URL',
 #     'postgresql://kavalakat_user1:kavalakat@localhost:5432/kavalakat_new'
 # )
-
 # DATABASES = {
 #     'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
 # }
 
-# # ── Auth ──────────────────────────────────────────────────────────────────────
+
+# # ── Auth / Password Validation ────────────────────────────────────────────────
 # AUTH_PASSWORD_VALIDATORS = [
 #     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
 #     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -94,7 +99,8 @@
 #     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 # ]
 
-# # ── DRF ───────────────────────────────────────────────────────────────────────
+
+# # ── Django REST Framework ─────────────────────────────────────────────────────
 # REST_FRAMEWORK = {
 #     'DEFAULT_AUTHENTICATION_CLASSES': (
 #         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -108,76 +114,137 @@
 #         'rest_framework.filters.SearchFilter',
 #         'rest_framework.filters.OrderingFilter',
 #     ],
-#     'DEFAULT_RENDERER_CLASSES': ['rest_framework.renderers.JSONRenderer'],
+#     'DEFAULT_RENDERER_CLASSES': [
+#         'rest_framework.renderers.JSONRenderer',
+#     ],
 #     'DEFAULT_PARSER_CLASSES': [
 #         'rest_framework.parsers.JSONParser',
 #         'rest_framework.parsers.MultiPartParser',
 #         'rest_framework.parsers.FormParser',
 #     ],
+#     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',  # ← API docs
 #     'EXCEPTION_HANDLER': 'kavalakat.exceptions.custom_exception_handler',
 # }
 
-# # ── JWT ───────────────────────────────────────────────────────────────────────
-# SIMPLE_JWT = {
-#     'ACCESS_TOKEN_LIFETIME':  timedelta(hours=2),
-#     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
-#     'ROTATE_REFRESH_TOKENS':  True,
-#     'BLACKLIST_AFTER_ROTATION': True,
-#     'UPDATE_LAST_LOGIN': True,
-#     'AUTH_HEADER_TYPES': ('Bearer',),
+
+# # ── drf-spectacular (API Docs) ────────────────────────────────────────────────
+# SPECTACULAR_SETTINGS = {
+#     'TITLE':                  'Kavalakat API',
+#     'DESCRIPTION':            (
+#         'REST API for Kavalakat CMS — covers Pages, About, Portfolio, '
+#         'Blog, Contact, Careers, Enquiries and AI Module.'
+#     ),
+#     'VERSION':                '1.0.0',
+#     'SERVE_INCLUDE_SCHEMA':   False,
+#     'CONTACT': {
+#         'name':  'Kavalakat Dev Team',
+#         'email': 'dev@kavalakat.com',
+#     },
+#     'LICENSE': {
+#         'name': 'Proprietary',
+#     },
+#     'TAGS': [
+#         {'name': 'auth',      'description': 'JWT authentication endpoints'},
+#         {'name': 'pages',     'description': 'Static page management'},
+#         {'name': 'about',     'description': 'About, Strengths, Milestones, Projects, Team, Gallery'},
+#         {'name': 'portfolio', 'description': 'Portfolio categories and items'},
+#         {'name': 'blog',      'description': 'Blog posts and categories'},
+#         {'name': 'contact',   'description': 'Contact info, Office locations, Careers, Enquiries'},
+#         {'name': 'ai',        'description': 'AI module endpoints'},
+#     ],
+#     'COMPONENT_SPLIT_REQUEST':   True,
+#     'SORT_OPERATIONS':           False,
+#     'ENUM_GENERATE_CHOICE_DESCRIPTION': True,
 # }
+
+
+# # ── Simple JWT ────────────────────────────────────────────────────────────────
+# SIMPLE_JWT = {
+#     'ACCESS_TOKEN_LIFETIME':    timedelta(hours=2),
+#     'REFRESH_TOKEN_LIFETIME':   timedelta(days=7),
+#     'ROTATE_REFRESH_TOKENS':    True,
+#     'BLACKLIST_AFTER_ROTATION': True,
+#     'UPDATE_LAST_LOGIN':        True,
+#     'AUTH_HEADER_TYPES':        ('Bearer',),
+# }
+
 
 # # ── CORS ──────────────────────────────────────────────────────────────────────
 # CORS_ALLOWED_ORIGINS = os.environ.get(
-#     'CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://127.0.0.1:3000'
+#     'CORS_ALLOWED_ORIGINS',
+#     'http://localhost:3000,http://127.0.0.1:3000'
 # ).split(',')
 # CORS_ALLOW_CREDENTIALS = True
 
-# # ── Static / Media ────────────────────────────────────────────────────────────
-# STATIC_URL  = '/static/'
-# STATIC_ROOT = BASE_DIR / 'staticfiles'
-# STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-# MEDIA_URL   = '/media/'
-# MEDIA_ROOT  = BASE_DIR / 'media'
 
-# # ── i18n ──────────────────────────────────────────────────────────────────────
-# LANGUAGE_CODE = 'en-us'
-# TIME_ZONE     = 'Asia/Kolkata'
-# USE_I18N = True
-# USE_TZ   = True
+# # ── Static / Media ────────────────────────────────────────────────────────────
+# STATIC_URL          = '/static/'
+# STATIC_ROOT         = BASE_DIR / 'staticfiles'
+# STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# MEDIA_URL           = '/media/'
+# MEDIA_ROOT          = BASE_DIR / 'media'
+
+
+# # ── Internationalisation ──────────────────────────────────────────────────────
+# LANGUAGE_CODE      = 'en-us'
+# TIME_ZONE          = 'Asia/Kolkata'
+# USE_I18N           = True
+# USE_TZ             = True
 # DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
 
 # # ── Messages ──────────────────────────────────────────────────────────────────
 # MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 
+
 # # ── OpenAI ────────────────────────────────────────────────────────────────────
 # OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
 
-# # ── Production security ───────────────────────────────────────────────────────
+
+# # ── Production Security ───────────────────────────────────────────────────────
 # if not DEBUG:
-#     SECURE_HSTS_SECONDS = 31536000
-#     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-#     # SECURE_SSL_REDIRECT  = True
-#     SECURE_SSL_REDIRECT  = False
-#     SESSION_COOKIE_SECURE = True
-#     CSRF_COOKIE_SECURE   = True
-#     SECURE_CONTENT_TYPE_NOSNIFF = True
-#     X_FRAME_OPTIONS = 'DENY'
+#     SECURE_HSTS_SECONDS             = 31536000
+#     SECURE_HSTS_INCLUDE_SUBDOMAINS  = True
+#     SECURE_SSL_REDIRECT             = False   # set True once SSL confirmed
+#     SESSION_COOKIE_SECURE           = True
+#     CSRF_COOKIE_SECURE              = True
+#     SECURE_CONTENT_TYPE_NOSNIFF     = True
+#     X_FRAME_OPTIONS                 = 'DENY'
+
 
 # # ── Logging ───────────────────────────────────────────────────────────────────
 # LOGGING = {
-#     'version': 1,
+#     'version':                  1,
 #     'disable_existing_loggers': False,
-#     'formatters': {'verbose': {'format': '[{levelname}] {asctime} {module}: {message}', 'style': '{'}},
-#     'handlers': {'console': {'class': 'logging.StreamHandler', 'formatter': 'verbose'}},
-#     'root': {'handlers': ['console'], 'level': 'INFO'},
+#     'formatters': {
+#         'verbose': {
+#             'format': '[{levelname}] {asctime} {module}: {message}',
+#             'style':  '{',
+#         },
+#     },
+#     'handlers': {
+#         'console': {
+#             'class':     'logging.StreamHandler',
+#             'formatter': 'verbose',
+#         },
+#     },
+#     'root': {
+#         'handlers': ['console'],
+#         'level':    'INFO',
+#     },
 #     'loggers': {
-#         'django':    {'handlers': ['console'], 'level': 'WARNING', 'propagate': False},
-#         'ai_module': {'handlers': ['console'], 'level': 'DEBUG',   'propagate': False},
+#         'django': {
+#             'handlers':  ['console'],
+#             'level':     'WARNING',
+#             'propagate': False,
+#         },
+#         'ai_module': {
+#             'handlers':  ['console'],
+#             'level':     'DEBUG',
+#             'propagate': False,
+#         },
 #     },
 # }
-
-# -----------------------------------------------------------------
 
 import os
 from pathlib import Path
@@ -187,16 +254,16 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-BASE_DIR = Path(__file__).resolve().parent.parent
-
+BASE_DIR   = Path(__file__).resolve().parent.parent
 SECRET_KEY = os.environ.get('SECRET_KEY', 'django-insecure-change-me')
-DEBUG = os.environ.get('DEBUG', 'False') == 'True'
+DEBUG      = os.environ.get('DEBUG', 'False') == 'True'
 ALLOWED_HOSTS = os.environ.get(
     'ALLOWED_HOSTS',
     'localhost,127.0.0.1,.onrender.com'
 ).split(',')
 
-# ── Installed Apps ───────────────────────────────────────
+
+# ── Installed Apps ────────────────────────────────────────────────────────────
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -204,11 +271,16 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+
+    # Third-party
     'rest_framework',
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
     'django_filters',
+    'drf_spectacular',
+
+    # Local apps
     'pages.apps.PagesConfig',
     'about.apps.AboutConfig',
     'portfolio.apps.PortfolioConfig',
@@ -218,7 +290,8 @@ INSTALLED_APPS = [
     'dashboard.apps.DashboardConfig',
 ]
 
-# ── Middleware ───────────────────────────────────────────
+
+# ── Middleware ────────────────────────────────────────────────────────────────
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
@@ -231,9 +304,11 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-ROOT_URLCONF = 'kavalakat.urls'
+ROOT_URLCONF     = 'kavalakat.urls'
+WSGI_APPLICATION = 'kavalakat.wsgi.application'
 
-# ── Templates ────────────────────────────────────────────
+
+# ── Templates ─────────────────────────────────────────────────────────────────
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -251,25 +326,24 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'kavalakat.wsgi.application'
 
-# ── Database ─────────────────────────────────────────────
+# ── Database ──────────────────────────────────────────────────────────────────
 # LOCAL:  postgresql://kavalakat_user1:kavalakat@localhost:5432/kavalakat_new
 # RENDER: set DATABASE_URL in Render environment variables
 DATABASE_URL = os.environ.get(
     'DATABASE_URL',
     'postgresql://kavalakat_user1:kavalakat@localhost:5432/kavalakat_new'
 )
-
 DATABASES = {
     'default': dj_database_url.parse(
         DATABASE_URL,
-        conn_max_age=0,     # ✅ 0 = fresh connection each request (required for Render free tier)
-        ssl_require=False,  # ✅ Render handles SSL at proxy level — Django must not enforce it
+        conn_max_age=0,    # fresh connection each request (required for Render free tier)
+        ssl_require=False, # Render handles SSL at proxy level
     )
 }
 
-# ── Auth ────────────────────────────────────────────────
+
+# ── Auth / Password Validation ────────────────────────────────────────────────
 AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator'},
     {'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator'},
@@ -277,7 +351,8 @@ AUTH_PASSWORD_VALIDATORS = [
     {'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator'},
 ]
 
-# ── DRF ─────────────────────────────────────────────────
+
+# ── Django REST Framework ─────────────────────────────────────────────────────
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
@@ -291,16 +366,51 @@ REST_FRAMEWORK = {
         'rest_framework.filters.SearchFilter',
         'rest_framework.filters.OrderingFilter',
     ],
-    'DEFAULT_RENDERER_CLASSES': ['rest_framework.renderers.JSONRenderer'],
+    'DEFAULT_RENDERER_CLASSES': [
+        'rest_framework.renderers.JSONRenderer',
+    ],
     'DEFAULT_PARSER_CLASSES': [
         'rest_framework.parsers.JSONParser',
         'rest_framework.parsers.MultiPartParser',
         'rest_framework.parsers.FormParser',
     ],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
     'EXCEPTION_HANDLER': 'kavalakat.exceptions.custom_exception_handler',
 }
 
-# ── JWT ─────────────────────────────────────────────────
+
+# ── drf-spectacular (API Documentation) ──────────────────────────────────────
+SPECTACULAR_SETTINGS = {
+    'TITLE':       'Kavalakat API',
+    'DESCRIPTION': (
+        'REST API for Kavalakat CMS — covers Pages, About, Portfolio, '
+        'Blog, Contact, Careers, Enquiries and AI Module.'
+    ),
+    'VERSION':               '1.0.0',
+    'SERVE_INCLUDE_SCHEMA':  False,
+    'CONTACT': {
+        'name':  'Kavalakat Dev Team',
+        'email': 'dev@kavalakat.com',
+    },
+    'LICENSE': {
+        'name': 'Proprietary',
+    },
+    'TAGS': [
+        {'name': 'auth',      'description': 'JWT authentication endpoints'},
+        {'name': 'pages',     'description': 'Static page management'},
+        {'name': 'about',     'description': 'About, Strengths, Milestones, Projects, Team, Gallery'},
+        {'name': 'portfolio', 'description': 'Portfolio categories and items'},
+        {'name': 'blog',      'description': 'Blog posts and categories'},
+        {'name': 'contact',   'description': 'Contact info, Office locations, Careers, Enquiries'},
+        {'name': 'ai',        'description': 'AI module endpoints'},
+    ],
+    'COMPONENT_SPLIT_REQUEST':          True,
+    'SORT_OPERATIONS':                  False,
+    'ENUM_GENERATE_CHOICE_DESCRIPTION': True,
+}
+
+
+# ── Simple JWT ────────────────────────────────────────────────────────────────
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME':    timedelta(hours=2),
     'REFRESH_TOKEN_LIFETIME':   timedelta(days=7),
@@ -310,38 +420,42 @@ SIMPLE_JWT = {
     'AUTH_HEADER_TYPES':        ('Bearer',),
 }
 
-# ── CORS ────────────────────────────────────────────────
+
+# ── CORS ──────────────────────────────────────────────────────────────────────
 CORS_ALLOWED_ORIGINS = os.environ.get(
     'CORS_ALLOWED_ORIGINS',
     'http://localhost:3000,http://127.0.0.1:3000'
 ).split(',')
 CORS_ALLOW_CREDENTIALS = True
 
-# ── Static / Media ──────────────────────────────────────
-STATIC_URL  = '/static/'
-STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-MEDIA_URL   = '/media/'
-MEDIA_ROOT  = BASE_DIR / 'media'
 
-# ── i18n ────────────────────────────────────────────────
-LANGUAGE_CODE = 'en-us'
-TIME_ZONE     = 'Asia/Kolkata'
-USE_I18N = True
-USE_TZ   = True
+# ── Static / Media ────────────────────────────────────────────────────────────
+STATIC_URL          = '/static/'
+STATIC_ROOT         = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+MEDIA_URL           = '/media/'
+MEDIA_ROOT          = BASE_DIR / 'media'
+
+
+# ── Internationalisation ──────────────────────────────────────────────────────
+LANGUAGE_CODE      = 'en-us'
+TIME_ZONE          = 'Asia/Kolkata'
+USE_I18N           = True
+USE_TZ             = True
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 MESSAGE_STORAGE    = 'django.contrib.messages.storage.session.SessionStorage'
 
-# ── OpenAI ──────────────────────────────────────────────
+
+# ── OpenAI ────────────────────────────────────────────────────────────────────
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
 
-# ── Production Security ──────────────────────────────────
-# Only applied when DEBUG=False (on Render)
+
+# ── Production Security (Render) ──────────────────────────────────────────────
 if not DEBUG:
     SECURE_HSTS_SECONDS            = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-    SECURE_SSL_REDIRECT            = False       # ✅ Render handles HTTPS — do NOT redirect
-    SECURE_PROXY_SSL_HEADER        = ('HTTP_X_FORWARDED_PROTO', 'https')  # ✅ Trust Render proxy
+    SECURE_SSL_REDIRECT            = False      # Render handles HTTPS — do NOT redirect
+    SECURE_PROXY_SSL_HEADER        = ('HTTP_X_FORWARDED_PROTO', 'https')  # trust Render proxy
     SESSION_COOKIE_SECURE          = True
     SESSION_COOKIE_SAMESITE        = 'Lax'
     CSRF_COOKIE_SECURE             = True
@@ -349,22 +463,37 @@ if not DEBUG:
     SECURE_CONTENT_TYPE_NOSNIFF    = True
     X_FRAME_OPTIONS                = 'DENY'
 
-# ── Logging ─────────────────────────────────────────────
+
+# ── Logging ───────────────────────────────────────────────────────────────────
 LOGGING = {
-    'version': 1,
+    'version':                  1,
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
             'format': '[{levelname}] {asctime} {module}: {message}',
-            'style': '{'
-        }
+            'style':  '{',
+        },
     },
     'handlers': {
-        'console': {'class': 'logging.StreamHandler', 'formatter': 'verbose'}
+        'console': {
+            'class':     'logging.StreamHandler',
+            'formatter': 'verbose',
+        },
     },
-    'root': {'handlers': ['console'], 'level': 'INFO'},
+    'root': {
+        'handlers': ['console'],
+        'level':    'INFO',
+    },
     'loggers': {
-        'django':    {'handlers': ['console'], 'level': 'WARNING', 'propagate': False},
-        'ai_module': {'handlers': ['console'], 'level': 'DEBUG',   'propagate': False},
+        'django': {
+            'handlers':  ['console'],
+            'level':     'WARNING',
+            'propagate': False,
+        },
+        'ai_module': {
+            'handlers':  ['console'],
+            'level':     'DEBUG',
+            'propagate': False,
+        },
     },
 }

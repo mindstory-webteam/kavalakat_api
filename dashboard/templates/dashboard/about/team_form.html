@@ -1,0 +1,89 @@
+{% extends 'dashboard/base.html' %}
+{% block content %}
+<div style="max-width:640px;">
+  <div style="margin-bottom:20px;">
+    <a href="{% url 'dashboard:team_list' %}" class="btn btn-secondary btn-sm">
+      <i class="fa-solid fa-arrow-left"></i> Back to Team
+    </a>
+  </div>
+  <div class="card">
+    <div class="card-header"><span class="card-title">{{ page_title }}</span></div>
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Full Name *</label>
+              <input type="text" name="name" class="form-control"
+                value="{{ obj.name|default:'' }}" required
+                placeholder="e.g. Olivern James"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Role / Title *</label>
+              <input type="text" name="role" class="form-control"
+                value="{{ obj.role|default:'' }}" required
+                placeholder="e.g. Production Manager"/>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Photo</label>
+            {% if obj.image %}
+            <div style="margin-bottom:10px;">
+              <img src="{{ obj.image.url }}"
+                style="width:80px;height:80px;border-radius:50%;object-fit:cover;
+                  border:2px solid var(--border);"/>
+            </div>
+            {% endif %}
+            <input type="file" name="image" class="form-control" accept="image/*"/>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Social Platform</label>
+              <select name="social_platform" class="form-control">
+                <option value="">— None —</option>
+                <option value="facebook"
+                  {% if obj.social_platform == 'facebook' %}selected{% endif %}>Facebook</option>
+                <option value="linkedin"
+                  {% if obj.social_platform == 'linkedin' %}selected{% endif %}>LinkedIn</option>
+                <option value="twitter"
+                  {% if obj.social_platform == 'twitter' %}selected{% endif %}>Twitter</option>
+                <option value="instagram"
+                  {% if obj.social_platform == 'instagram' %}selected{% endif %}>Instagram</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Social URL</label>
+              <input type="url" name="social_url" class="form-control"
+                value="{{ obj.social_url|default:'' }}"
+                placeholder="https://linkedin.com/in/…"/>
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Order</label>
+              <input type="number" name="order" class="form-control"
+                value="{{ obj.order|default:'0' }}"/>
+            </div>
+            <div class="form-group" style="padding-top:28px;">
+              <div class="form-check">
+                <input type="checkbox" name="is_active" id="is_active"
+                  {% if obj.is_active or not obj %}checked{% endif %}/>
+                <label for="is_active">Active (visible on website)</label>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;padding-top:8px;">
+            <button type="submit" class="btn btn-primary" style="padding:12px 28px;">
+              <i class="fa-solid fa-floppy-disk"></i>
+              {% if obj %}Update Member{% else %}Add Member{% endif %}
+            </button>
+            <a href="{% url 'dashboard:team_list' %}" class="btn btn-secondary"
+              style="padding:12px 20px;">Cancel</a>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

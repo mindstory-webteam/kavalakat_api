@@ -3,8 +3,9 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from kavalakat.permissions import IsAdminOrReadOnly
-from .models import About, Strength, Milestone, Project, Gallery
-from .serializers import AboutSerializer, StrengthSerializer, MilestoneSerializer, ProjectSerializer, GallerySerializer
+from .models import About, Strength, Milestone, Project, Gallery, TeamMember
+from .serializers import (AboutSerializer, StrengthSerializer, MilestoneSerializer,
+                          ProjectSerializer, GallerySerializer, TeamMemberSerializer)
 
 def crud_list(view, request):
     qs = view.filter_queryset(view.get_queryset())
@@ -98,6 +99,26 @@ class GalleryViewSet(viewsets.ModelViewSet):
     ordering_fields = ['order','created_at']
     def get_queryset(self):
         qs = Gallery.objects.all()
+        if not (self.request.user and self.request.user.is_staff): qs = qs.filter(is_active=True)
+        return qs
+    def list(self, request, *args, **kwargs): return crud_list(self, request)
+    def retrieve(self, request, *args, **kwargs): return crud_retrieve(self, request)
+    def create(self, request, *args, **kwargs): return crud_create(self, request)
+    def update(self, request, *args, **kwargs): return crud_update(self, request, kwargs.pop('partial', False))
+    def destroy(self, request, *args, **kwargs): return crud_destroy(self, request)
+    @action(detail=True, methods=['post'], url_path='toggle-active')
+    def toggle_active(self, request, pk=None):
+        obj = self.get_object(); obj.is_active = not obj.is_active; obj.save(update_fields=['is_active'])
+        return Response({'success': True, 'is_active': obj.is_active})
+
+class TeamMemberViewSet(viewsets.ModelViewSet):
+    serializer_class = TeamMemberSerializer
+    permission_classes = [IsAdminOrReadOnly]
+    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
+    search_fields = ['name','role']
+    ordering_fields = ['order','name']
+    def get_queryset(self):
+        qs = TeamMember.objects.all()
         if not (self.request.user and self.request.user.is_staff): qs = qs.filter(is_active=True)
         return qs
     def list(self, request, *args, **kwargs): return crud_list(self, request)

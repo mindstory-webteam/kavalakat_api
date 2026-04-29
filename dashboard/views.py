@@ -114,12 +114,12 @@ def pages_edit(request, pk):
     from pages.models import Page
     obj = get_object_or_404(Page, pk=pk)
     if request.method == 'POST':
-        obj.title = request.POST.get('title', obj.title).strip()
-        obj.content = request.POST.get('content', '')
-        obj.meta_title = request.POST.get('meta_title', '')
+        obj.title            = request.POST.get('title', obj.title).strip()
+        obj.content          = request.POST.get('content', '')
+        obj.meta_title       = request.POST.get('meta_title', '')
         obj.meta_description = request.POST.get('meta_description', '')
-        obj.is_active = request.POST.get('is_active') == 'on'
-        obj.order = int(request.POST.get('order', 0) or 0)
+        obj.is_active        = request.POST.get('is_active') == 'on'
+        obj.order            = int(request.POST.get('order', 0) or 0)
         if request.FILES.get('banner_image'):
             obj.banner_image = request.FILES['banner_image']
         obj.save()
@@ -133,7 +133,8 @@ def pages_delete(request, pk):
     from pages.models import Page
     obj = get_object_or_404(Page, pk=pk)
     if request.method == 'POST':
-        obj.delete(); messages.success(request, 'Page deleted.')
+        obj.delete()
+        messages.success(request, 'Page deleted.')
         return redirect('dashboard:pages_list')
     return render(request, 'dashboard/confirm_delete.html', {'obj': obj, 'page_title': 'Delete Page'})
 
@@ -142,8 +143,10 @@ def pages_delete(request, pk):
 @staff_required
 def blog_list(request):
     from blog.models import Post, Category
-    search = request.GET.get('search',''); status = request.GET.get('status',''); cat = request.GET.get('category','')
-    qs = Post.objects.select_related('category','author').all()
+    search = request.GET.get('search','')
+    status = request.GET.get('status','')
+    cat    = request.GET.get('category','')
+    qs     = Post.objects.select_related('category','author').all()
     if search: qs = qs.filter(Q(title__icontains=search)|Q(content__icontains=search))
     if status: qs = qs.filter(status=status)
     if cat:    qs = qs.filter(category_id=cat)
@@ -193,17 +196,18 @@ def blog_edit(request, pk):
     from blog.models import Post, Category
     obj = get_object_or_404(Post, pk=pk)
     if request.method == 'POST':
-        obj.title = request.POST.get('title', obj.title).strip()
-        obj.content = request.POST.get('content', '')
-        obj.excerpt = request.POST.get('excerpt', '')
-        obj.status  = request.POST.get('status', obj.status)
-        obj.tags    = request.POST.get('tags', '')
-        obj.meta_title = request.POST.get('meta_title', '')
+        obj.title            = request.POST.get('title', obj.title).strip()
+        obj.content          = request.POST.get('content', '')
+        obj.excerpt          = request.POST.get('excerpt', '')
+        obj.status           = request.POST.get('status', obj.status)
+        obj.tags             = request.POST.get('tags', '')
+        obj.meta_title       = request.POST.get('meta_title', '')
         obj.meta_description = request.POST.get('meta_description', '')
-        obj.is_featured = request.POST.get('is_featured') == 'on'
-        obj.category_id = request.POST.get('category') or None
+        obj.is_featured      = request.POST.get('is_featured') == 'on'
+        obj.category_id      = request.POST.get('category') or None
         if request.FILES.get('image'): obj.image = request.FILES['image']
-        if obj.status == 'published' and not obj.published_at: obj.published_at = timezone.now()
+        if obj.status == 'published' and not obj.published_at:
+            obj.published_at = timezone.now()
         obj.save()
         messages.success(request, 'Post updated.')
         return redirect('dashboard:blog_list')
@@ -217,7 +221,8 @@ def blog_delete(request, pk):
     from blog.models import Post
     obj = get_object_or_404(Post, pk=pk)
     if request.method == 'POST':
-        obj.delete(); messages.success(request, 'Post deleted.')
+        obj.delete()
+        messages.success(request, 'Post deleted.')
         return redirect('dashboard:blog_list')
     return render(request, 'dashboard/confirm_delete.html', {'obj': obj, 'page_title': 'Delete Post'})
 
@@ -236,9 +241,11 @@ def blog_cat_create(request):
     if request.method == 'POST':
         name = request.POST.get('name','').strip()
         if name:
-            Category.objects.create(name=name, slug=slugify(name),
+            Category.objects.create(
+                name=name, slug=slugify(name),
                 description=request.POST.get('description',''),
-                order=int(request.POST.get('order',0) or 0))
+                order=int(request.POST.get('order',0) or 0),
+            )
             messages.success(request, 'Category created.')
         return redirect('dashboard:blog_categories')
     return render(request, 'dashboard/blog/category_form.html', {'page_title': 'Create Category', 'obj': None})
@@ -249,10 +256,11 @@ def blog_cat_edit(request, pk):
     from blog.models import Category
     obj = get_object_or_404(Category, pk=pk)
     if request.method == 'POST':
-        obj.name = request.POST.get('name', obj.name).strip()
+        obj.name        = request.POST.get('name', obj.name).strip()
         obj.description = request.POST.get('description','')
-        obj.order = int(request.POST.get('order',0) or 0)
-        obj.save(); messages.success(request, 'Category updated.')
+        obj.order       = int(request.POST.get('order',0) or 0)
+        obj.save()
+        messages.success(request, 'Category updated.')
         return redirect('dashboard:blog_categories')
     return render(request, 'dashboard/blog/category_form.html', {'page_title': 'Edit Category', 'obj': obj})
 
@@ -262,7 +270,8 @@ def blog_cat_delete(request, pk):
     from blog.models import Category
     obj = get_object_or_404(Category, pk=pk)
     if request.method == 'POST':
-        obj.delete(); messages.success(request, 'Category deleted.')
+        obj.delete()
+        messages.success(request, 'Category deleted.')
         return redirect('dashboard:blog_categories')
     return render(request, 'dashboard/confirm_delete.html', {'obj': obj, 'page_title': 'Delete Category'})
 
@@ -271,8 +280,9 @@ def blog_cat_delete(request, pk):
 @staff_required
 def enquiry_list(request):
     from contact.models import Enquiry
-    status = request.GET.get('status',''); search = request.GET.get('search','')
-    qs = Enquiry.objects.all()
+    status = request.GET.get('status','')
+    search = request.GET.get('search','')
+    qs     = Enquiry.objects.all()
     if status: qs = qs.filter(status=status)
     if search: qs = qs.filter(Q(name__icontains=search)|Q(email__icontains=search)|Q(message__icontains=search))
     enquiries = Paginator(qs.order_by('-created_at'), 15).get_page(request.GET.get('page'))
@@ -288,11 +298,14 @@ def enquiry_list(request):
 def enquiry_detail(request, pk):
     from contact.models import Enquiry
     obj = get_object_or_404(Enquiry, pk=pk)
-    if obj.status == 'new': obj.status = 'read'; obj.save(update_fields=['status'])
+    if obj.status == 'new':
+        obj.status = 'read'
+        obj.save(update_fields=['status'])
     if request.method == 'POST':
-        obj.status = request.POST.get('status', obj.status)
+        obj.status     = request.POST.get('status', obj.status)
         obj.admin_note = request.POST.get('admin_note','')
-        obj.save(); messages.success(request, 'Enquiry updated.')
+        obj.save()
+        messages.success(request, 'Enquiry updated.')
         return redirect('dashboard:enquiry_detail', pk=pk)
     return render(request, 'dashboard/enquiries/detail.html', {'obj': obj, 'page_title': 'Enquiry Detail'})
 
@@ -302,7 +315,8 @@ def enquiry_delete(request, pk):
     from contact.models import Enquiry
     obj = get_object_or_404(Enquiry, pk=pk)
     if request.method == 'POST':
-        obj.delete(); messages.success(request, 'Enquiry deleted.')
+        obj.delete()
+        messages.success(request, 'Enquiry deleted.')
         return redirect('dashboard:enquiry_list')
     return render(request, 'dashboard/confirm_delete.html', {'obj': obj, 'page_title': 'Delete Enquiry'})
 
@@ -314,32 +328,23 @@ def portfolio_list(request):
     search        = request.GET.get('search', '').strip()
     selected_cat  = request.GET.get('cat', '')
     active_filter = request.GET.get('active', '')
-
     qs = Item.objects.select_related('category').all()
     if search:
         qs = qs.filter(
-            Q(name__icontains=search) |
-            Q(description__icontains=search) |
-            Q(tags__icontains=search) |
-            Q(category__name__icontains=search)
+            Q(name__icontains=search) | Q(description__icontains=search) |
+            Q(tags__icontains=search) | Q(category__name__icontains=search)
         )
-    if selected_cat:
-        qs = qs.filter(category_id=selected_cat)
-    if active_filter == '1':
-        qs = qs.filter(is_active=True)
-    elif active_filter == '0':
-        qs = qs.filter(is_active=False)
-
+    if selected_cat:           qs = qs.filter(category_id=selected_cat)
+    if active_filter == '1':   qs = qs.filter(is_active=True)
+    elif active_filter == '0': qs = qs.filter(is_active=False)
     qs    = qs.order_by('category__order', 'order', 'name')
     items = Paginator(qs, 20).get_page(request.GET.get('page'))
-
     categories = (
         Category.objects
         .prefetch_related('items')
         .annotate(item_count=Count('items'))
         .order_by('order', 'name')
     )
-
     return render(request, 'dashboard/portfolio/list.html', {
         'categories':    categories,
         'items':         items,
@@ -353,25 +358,20 @@ def portfolio_list(request):
 @staff_required
 def portfolio_create(request):
     from portfolio.models import Category, Item
-
-    # Support both ?cat= (from column + button) and ?category= (legacy)
     preselected_cat = request.GET.get('cat', '') or request.GET.get('category', '')
-
     categories = (
         Category.objects
         .annotate(item_count=Count('items'))
         .prefetch_related('items')
         .order_by('order', 'name')
     )
-
     if request.method == 'POST':
         name   = request.POST.get('name', '').strip().upper()
         cat_id = request.POST.get('category', '').strip()
-
         if not name:
             messages.error(request, 'Item name is required.')
         elif not cat_id:
-            messages.error(request, 'Please select a category (Trading, Distribution or Services).')
+            messages.error(request, 'Please select a category.')
         else:
             try:
                 Item.objects.create(
@@ -388,12 +388,9 @@ def portfolio_create(request):
                 return redirect('dashboard:portfolio_list')
             except Exception as e:
                 messages.error(request, f'Error creating item: {e}')
-
     return render(request, 'dashboard/portfolio/form.html', {
-        'categories':     categories,
-        'page_title':     'Add Portfolio Item',
-        'obj':            None,
-        'preselected_cat': preselected_cat,
+        'categories': categories, 'page_title': 'Add Portfolio Item',
+        'obj': None, 'preselected_cat': preselected_cat,
     })
 
 
@@ -401,18 +398,15 @@ def portfolio_create(request):
 def portfolio_edit(request, pk):
     from portfolio.models import Category, Item
     obj = get_object_or_404(Item, pk=pk)
-
     categories = (
         Category.objects
         .annotate(item_count=Count('items'))
         .prefetch_related('items')
         .order_by('order', 'name')
     )
-
     if request.method == 'POST':
         name   = request.POST.get('name', obj.name).strip().upper()
         cat_id = request.POST.get('category', '').strip()
-
         if not name:
             messages.error(request, 'Item name is required.')
         elif not cat_id:
@@ -425,17 +419,13 @@ def portfolio_edit(request, pk):
             obj.is_featured = request.POST.get('is_featured') == 'on'
             obj.is_active   = request.POST.get('is_active') == 'on'
             obj.order       = int(request.POST.get('order', 0) or 0)
-            if request.FILES.get('image'):
-                obj.image = request.FILES['image']
+            if request.FILES.get('image'): obj.image = request.FILES['image']
             obj.save()
             messages.success(request, f'Item "{obj.name}" updated.')
             return redirect('dashboard:portfolio_list')
-
     return render(request, 'dashboard/portfolio/form.html', {
-        'categories':     categories,
-        'page_title':     f'Edit — {obj.name}',
-        'obj':            obj,
-        'preselected_cat': str(obj.category_id),
+        'categories': categories, 'page_title': f'Edit — {obj.name}',
+        'obj': obj, 'preselected_cat': str(obj.category_id),
     })
 
 
@@ -451,150 +441,6 @@ def portfolio_delete(request, pk):
     return render(request, 'dashboard/confirm_delete.html', {
         'obj': obj, 'page_title': f'Delete — {obj.name}'
     })
-
-
-# ── CAREERS ───────────────────────────────────────────────────────────────────
-@staff_required
-def careers_list(request):
-    from contact.models import Career
-    careers = Paginator(Career.objects.all().order_by('-created_at'), 10).get_page(request.GET.get('page'))
-    return render(request, 'dashboard/careers/list.html', {'careers': careers, 'page_title': 'Careers'})
-
-
-@staff_required
-def careers_create(request):
-    from contact.models import Career
-    if request.method == 'POST':
-        Career.objects.create(
-            title=request.POST.get('title','').strip(), department=request.POST.get('department',''),
-            description=request.POST.get('description',''), requirements=request.POST.get('requirements',''),
-            location=request.POST.get('location',''), job_type=request.POST.get('job_type','Full-Time'),
-            experience=request.POST.get('experience',''), salary_range=request.POST.get('salary_range',''),
-            is_active=request.POST.get('is_active')=='on', deadline=request.POST.get('deadline') or None,
-        )
-        messages.success(request, 'Career posted.'); return redirect('dashboard:careers_list')
-    return render(request, 'dashboard/careers/form.html', {'page_title': 'Post a Job', 'obj': None})
-
-
-@staff_required
-def careers_edit(request, pk):
-    from contact.models import Career
-    obj = get_object_or_404(Career, pk=pk)
-    if request.method == 'POST':
-        obj.title=request.POST.get('title',obj.title).strip(); obj.department=request.POST.get('department','')
-        obj.description=request.POST.get('description',''); obj.requirements=request.POST.get('requirements','')
-        obj.location=request.POST.get('location',''); obj.job_type=request.POST.get('job_type',obj.job_type)
-        obj.experience=request.POST.get('experience',''); obj.salary_range=request.POST.get('salary_range','')
-        obj.is_active=request.POST.get('is_active')=='on'; obj.deadline=request.POST.get('deadline') or None
-        obj.save(); messages.success(request, 'Career updated.'); return redirect('dashboard:careers_list')
-    return render(request, 'dashboard/careers/form.html', {'page_title': 'Edit Career', 'obj': obj})
-
-
-@staff_required
-def careers_delete(request, pk):
-    from contact.models import Career
-    obj = get_object_or_404(Career, pk=pk)
-    if request.method == 'POST':
-        obj.delete(); messages.success(request, 'Career deleted.'); return redirect('dashboard:careers_list')
-    return render(request, 'dashboard/confirm_delete.html', {'obj': obj, 'page_title': 'Delete Career'})
-
-
-# ── CONTACT INFO ──────────────────────────────────────────────────────────────
-@staff_required
-def contact_info(request):
-    from contact.models import Contact
-    obj = Contact.objects.first()
-    fields = ['phone','alt_phone','email','alt_email','address','city','state','pincode',
-              'map_embed_url','whatsapp','facebook','instagram','linkedin','youtube','business_hours']
-    if request.method == 'POST':
-        data = {f: request.POST.get(f,'') for f in fields}
-        if obj:
-            for k,v in data.items(): setattr(obj, k, v)
-            obj.save()
-        else:
-            Contact.objects.create(**data)
-        messages.success(request, 'Contact info saved.')
-        return redirect('dashboard:contact_info')
-    return render(request, 'dashboard/contact/form.html', {'obj': obj, 'page_title': 'Contact Info'})
-
-
-# ── ABOUT ─────────────────────────────────────────────────────────────────────
-@staff_required
-def about_info(request):
-    from about.models import About
-    obj = About.objects.first()
-    if request.method == 'POST':
-        data = {
-            'title': request.POST.get('title','').strip(),
-            'description': request.POST.get('description',''),
-            'vision': request.POST.get('vision',''),
-            'mission': request.POST.get('mission',''),
-            'founded_year': request.POST.get('founded_year') or None,
-            'employee_count': request.POST.get('employee_count') or None,
-        }
-        if obj:
-            for k,v in data.items(): setattr(obj,k,v)
-            obj.save()
-        else:
-            About.objects.create(**data)
-        messages.success(request, 'About info saved.')
-        return redirect('dashboard:about_info')
-    return render(request, 'dashboard/about/form.html', {'obj': obj, 'page_title': 'About Info'})
-
-
-@staff_required
-def gallery_list(request):
-    from about.models import Gallery
-    return render(request, 'dashboard/about/gallery.html', {
-        'items': Gallery.objects.all().order_by('order'), 'page_title': 'Gallery'
-    })
-
-
-@staff_required
-def gallery_upload(request):
-    from about.models import Gallery
-    if request.method == 'POST' and request.FILES.get('image'):
-        Gallery.objects.create(
-            title=request.POST.get('title',''),
-            caption=request.POST.get('caption',''),
-            order=int(request.POST.get('order',0) or 0),
-            is_active=request.POST.get('is_active') == 'on',
-            image=request.FILES['image'],
-        )
-        messages.success(request, 'Image uploaded.')
-    return redirect('dashboard:gallery_list')
-
-
-@staff_required
-def gallery_delete(request, pk):
-    from about.models import Gallery
-    obj = get_object_or_404(Gallery, pk=pk)
-    if request.method == 'POST':
-        obj.delete(); messages.success(request, 'Image deleted.')
-        return redirect('dashboard:gallery_list')
-    return render(request, 'dashboard/confirm_delete.html', {'obj': obj, 'page_title': 'Delete Image'})
-
-
-# ── AJAX ──────────────────────────────────────────────────────────────────────
-@staff_required
-@require_http_methods(['POST'])
-def ajax_toggle(request):
-    model_map = {
-        'page': ('pages','Page'), 'post': ('blog','Post'),
-        'item': ('portfolio','Item'), 'career': ('contact','Career'),
-        'gallery': ('about','Gallery'), 'strength': ('about','Strength'),
-    }
-    model_name = request.POST.get('model'); pk = request.POST.get('pk'); field = request.POST.get('field')
-    if model_name not in model_map:
-        return JsonResponse({'ok': False, 'error': 'Unknown model'})
-    app, cls = model_map[model_name]
-    from django.apps import apps
-    Model = apps.get_model(app, cls)
-    obj = get_object_or_404(Model, pk=pk)
-    current = getattr(obj, field)
-    setattr(obj, field, not current)
-    obj.save(update_fields=[field])
-    return JsonResponse({'ok': True, 'value': not current})
 
 
 # ── PORTFOLIO CATEGORIES ──────────────────────────────────────────────────────
@@ -666,3 +512,443 @@ def portfolio_cat_delete(request, pk):
     return render(request, 'dashboard/confirm_delete.html', {
         'obj': obj, 'page_title': f'Delete Category — {obj.name}'
     })
+
+
+# ── CAREERS ───────────────────────────────────────────────────────────────────
+@staff_required
+def careers_list(request):
+    from contact.models import Career
+    careers = Paginator(Career.objects.all().order_by('-created_at'), 10).get_page(request.GET.get('page'))
+    return render(request, 'dashboard/careers/list.html', {'careers': careers, 'page_title': 'Careers'})
+
+
+@staff_required
+def careers_create(request):
+    from contact.models import Career
+    if request.method == 'POST':
+        Career.objects.create(
+            title=request.POST.get('title','').strip(),
+            department=request.POST.get('department',''),
+            description=request.POST.get('description',''),
+            requirements=request.POST.get('requirements',''),
+            location=request.POST.get('location',''),
+            job_type=request.POST.get('job_type','Full-Time'),
+            experience=request.POST.get('experience',''),
+            salary_range=request.POST.get('salary_range',''),
+            is_active=request.POST.get('is_active') == 'on',
+            deadline=request.POST.get('deadline') or None,
+        )
+        messages.success(request, 'Career posted.')
+        return redirect('dashboard:careers_list')
+    return render(request, 'dashboard/careers/form.html', {'page_title': 'Post a Job', 'obj': None})
+
+
+@staff_required
+def careers_edit(request, pk):
+    from contact.models import Career
+    obj = get_object_or_404(Career, pk=pk)
+    if request.method == 'POST':
+        obj.title        = request.POST.get('title', obj.title).strip()
+        obj.department   = request.POST.get('department', '')
+        obj.description  = request.POST.get('description', '')
+        obj.requirements = request.POST.get('requirements', '')
+        obj.location     = request.POST.get('location', '')
+        obj.job_type     = request.POST.get('job_type', obj.job_type)
+        obj.experience   = request.POST.get('experience', '')
+        obj.salary_range = request.POST.get('salary_range', '')
+        obj.is_active    = request.POST.get('is_active') == 'on'
+        obj.deadline     = request.POST.get('deadline') or None
+        obj.save()
+        messages.success(request, 'Career updated.')
+        return redirect('dashboard:careers_list')
+    return render(request, 'dashboard/careers/form.html', {'page_title': 'Edit Career', 'obj': obj})
+
+
+@staff_required
+def careers_delete(request, pk):
+    from contact.models import Career
+    obj = get_object_or_404(Career, pk=pk)
+    if request.method == 'POST':
+        obj.delete()
+        messages.success(request, 'Career deleted.')
+        return redirect('dashboard:careers_list')
+    return render(request, 'dashboard/confirm_delete.html', {'obj': obj, 'page_title': 'Delete Career'})
+
+
+# ── CONTACT INFO ──────────────────────────────────────────────────────────────
+@staff_required
+def contact_info(request):
+    from contact.models import Contact
+    obj    = Contact.objects.first()
+    fields = ['phone','alt_phone','email','alt_email','address','city','state','pincode',
+              'map_embed_url','whatsapp','facebook','instagram','linkedin','youtube','business_hours']
+    if request.method == 'POST':
+        data = {f: request.POST.get(f,'') for f in fields}
+        if obj:
+            for k, v in data.items(): setattr(obj, k, v)
+            obj.save()
+        else:
+            Contact.objects.create(**data)
+        messages.success(request, 'Contact info saved.')
+        return redirect('dashboard:contact_info')
+    return render(request, 'dashboard/contact/form.html', {'obj': obj, 'page_title': 'Contact Info'})
+
+
+# ── ABOUT ─────────────────────────────────────────────────────────────────────
+@staff_required
+def about_info(request):
+    from about.models import About
+    obj = About.objects.first()
+    if request.method == 'POST':
+        data = {
+            'title':          request.POST.get('title', '').strip(),
+            'description':    request.POST.get('description', ''),
+            'vision':         request.POST.get('vision', ''),
+            'mission':        request.POST.get('mission', ''),
+            'founded_year':   request.POST.get('founded_year') or None,
+            'employee_count': request.POST.get('employee_count') or None,
+        }
+        if obj:
+            for k, v in data.items(): setattr(obj, k, v)
+            obj.save()
+        else:
+            About.objects.create(**data)
+        messages.success(request, 'About info saved.')
+        return redirect('dashboard:about_info')
+    return render(request, 'dashboard/about/form.html', {'obj': obj, 'page_title': 'About Info'})
+
+
+# ── STRENGTHS ─────────────────────────────────────────────────────────────────
+@staff_required
+def strengths_list(request):
+    from about.models import Strength
+    return render(request, 'dashboard/about/strengths.html', {
+        'items': Strength.objects.all().order_by('order'),
+        'page_title': 'Strengths',
+    })
+
+
+@staff_required
+def strength_create(request):
+    from about.models import Strength
+    if request.method == 'POST':
+        Strength.objects.create(
+            title=request.POST.get('title', '').strip(),
+            description=request.POST.get('description', ''),
+            icon=request.POST.get('icon', ''),
+            order=int(request.POST.get('order', 0) or 0),
+            is_active=request.POST.get('is_active') == 'on',
+            image=request.FILES.get('image'),
+        )
+        messages.success(request, 'Strength added.')
+        return redirect('dashboard:strengths_list')
+    return render(request, 'dashboard/about/strength_form.html', {
+        'page_title': 'Add Strength', 'obj': None,
+    })
+
+
+@staff_required
+def strength_edit(request, pk):
+    from about.models import Strength
+    obj = get_object_or_404(Strength, pk=pk)
+    if request.method == 'POST':
+        obj.title       = request.POST.get('title', obj.title).strip()
+        obj.description = request.POST.get('description', '')
+        obj.icon        = request.POST.get('icon', '')
+        obj.order       = int(request.POST.get('order', 0) or 0)
+        obj.is_active   = request.POST.get('is_active') == 'on'
+        if request.FILES.get('image'): obj.image = request.FILES['image']
+        obj.save()
+        messages.success(request, 'Strength updated.')
+        return redirect('dashboard:strengths_list')
+    return render(request, 'dashboard/about/strength_form.html', {
+        'page_title': 'Edit Strength', 'obj': obj,
+    })
+
+
+@staff_required
+def strength_delete(request, pk):
+    from about.models import Strength
+    obj = get_object_or_404(Strength, pk=pk)
+    if request.method == 'POST':
+        obj.delete()
+        messages.success(request, 'Strength deleted.')
+        return redirect('dashboard:strengths_list')
+    return render(request, 'dashboard/confirm_delete.html', {
+        'obj': obj, 'page_title': 'Delete Strength',
+    })
+
+
+# ── MILESTONES ────────────────────────────────────────────────────────────────
+@staff_required
+def milestones_list(request):
+    from about.models import Milestone
+    return render(request, 'dashboard/about/milestones.html', {
+        'items': Milestone.objects.all().order_by('year', 'order'),
+        'page_title': 'Milestones',
+    })
+
+
+@staff_required
+def milestone_create(request):
+    from about.models import Milestone
+    if request.method == 'POST':
+        Milestone.objects.create(
+            year=int(request.POST.get('year', 0)),
+            title=request.POST.get('title', '').strip(),
+            description=request.POST.get('description', ''),
+            tags=request.POST.get('tags', ''),
+            order=int(request.POST.get('order', 0) or 0),
+            image=request.FILES.get('image'),
+        )
+        messages.success(request, 'Milestone added.')
+        return redirect('dashboard:milestones_list')
+    return render(request, 'dashboard/about/milestone_form.html', {
+        'page_title': 'Add Milestone', 'obj': None,
+    })
+
+
+@staff_required
+def milestone_edit(request, pk):
+    from about.models import Milestone
+    obj = get_object_or_404(Milestone, pk=pk)
+    if request.method == 'POST':
+        obj.year        = int(request.POST.get('year', obj.year))
+        obj.title       = request.POST.get('title', obj.title).strip()
+        obj.description = request.POST.get('description', '')
+        obj.tags        = request.POST.get('tags', '')
+        obj.order       = int(request.POST.get('order', 0) or 0)
+        if request.FILES.get('image'): obj.image = request.FILES['image']
+        obj.save()
+        messages.success(request, 'Milestone updated.')
+        return redirect('dashboard:milestones_list')
+    return render(request, 'dashboard/about/milestone_form.html', {
+        'page_title': 'Edit Milestone', 'obj': obj,
+    })
+
+
+@staff_required
+def milestone_delete(request, pk):
+    from about.models import Milestone
+    obj = get_object_or_404(Milestone, pk=pk)
+    if request.method == 'POST':
+        obj.delete()
+        messages.success(request, 'Milestone deleted.')
+        return redirect('dashboard:milestones_list')
+    return render(request, 'dashboard/confirm_delete.html', {
+        'obj': obj, 'page_title': 'Delete Milestone',
+    })
+
+
+# ── PROJECTS ──────────────────────────────────────────────────────────────────
+@staff_required
+def projects_list(request):
+    from about.models import Project
+    search   = request.GET.get('search', '').strip()
+    featured = request.GET.get('featured', '')
+    qs = Project.objects.all()
+    if search:
+        qs = qs.filter(
+            Q(title__icontains=search)       | Q(client__icontains=search) |
+            Q(tag__icontains=search)          | Q(description__icontains=search)
+        )
+    if featured == '1': qs = qs.filter(is_featured=True)
+    if featured == '0': qs = qs.filter(is_featured=False)
+    projects = Paginator(qs.order_by('-created_at'), 12).get_page(request.GET.get('page'))
+    return render(request, 'dashboard/about/projects.html', {
+        'items':      projects,
+        'search':     search,
+        'featured':   featured,
+        'page_title': 'Projects',
+    })
+
+
+@staff_required
+def project_create(request):
+    from about.models import Project
+    if request.method == 'POST':
+        Project.objects.create(
+            title           = request.POST.get('title', '').strip(),
+            description     = request.POST.get('description', ''),
+            client          = request.POST.get('client', '').strip(),
+            client_location = request.POST.get('client_location', '').strip(),
+            location        = request.POST.get('location', '').strip(),
+            year            = request.POST.get('year') or None,
+            tag             = request.POST.get('tag', '').strip(),
+            contact_url     = request.POST.get('contact_url', '').strip(),
+            is_featured     = request.POST.get('is_featured') == 'on',
+            image           = request.FILES.get('image'),
+            client_logo     = request.FILES.get('client_logo'),
+        )
+        messages.success(request, 'Project created.')
+        return redirect('dashboard:projects_list')
+    return render(request, 'dashboard/about/project_form.html', {
+        'page_title': 'Add Project', 'obj': None,
+    })
+
+
+@staff_required
+def project_edit(request, pk):
+    from about.models import Project
+    obj = get_object_or_404(Project, pk=pk)
+    if request.method == 'POST':
+        obj.title           = request.POST.get('title', obj.title).strip()
+        obj.description     = request.POST.get('description', '')
+        obj.client          = request.POST.get('client', '').strip()
+        obj.client_location = request.POST.get('client_location', '').strip()
+        obj.location        = request.POST.get('location', '').strip()
+        obj.year            = request.POST.get('year') or None
+        obj.tag             = request.POST.get('tag', '').strip()
+        obj.contact_url     = request.POST.get('contact_url', '').strip()
+        obj.is_featured     = request.POST.get('is_featured') == 'on'
+        if request.FILES.get('image'):       obj.image       = request.FILES['image']
+        if request.FILES.get('client_logo'): obj.client_logo = request.FILES['client_logo']
+        obj.save()
+        messages.success(request, 'Project updated.')
+        return redirect('dashboard:projects_list')
+    return render(request, 'dashboard/about/project_form.html', {
+        'page_title': f'Edit — {obj.title}', 'obj': obj,
+    })
+
+
+@staff_required
+def project_delete(request, pk):
+    from about.models import Project
+    obj = get_object_or_404(Project, pk=pk)
+    if request.method == 'POST':
+        obj.delete()
+        messages.success(request, 'Project deleted.')
+        return redirect('dashboard:projects_list')
+    return render(request, 'dashboard/confirm_delete.html', {
+        'obj': obj, 'page_title': f'Delete — {obj.title}',
+    })
+
+
+# ── GALLERY ───────────────────────────────────────────────────────────────────
+@staff_required
+def gallery_list(request):
+    from about.models import Gallery
+    return render(request, 'dashboard/about/gallery.html', {
+        'items': Gallery.objects.all().order_by('order'),
+        'page_title': 'Gallery',
+    })
+
+
+@staff_required
+def gallery_upload(request):
+    from about.models import Gallery
+    if request.method == 'POST' and request.FILES.get('image'):
+        Gallery.objects.create(
+            title=request.POST.get('title', ''),
+            caption=request.POST.get('caption', ''),
+            order=int(request.POST.get('order', 0) or 0),
+            is_active=request.POST.get('is_active') == 'on',
+            image=request.FILES['image'],
+        )
+        messages.success(request, 'Image uploaded.')
+    return redirect('dashboard:gallery_list')
+
+
+@staff_required
+def gallery_delete(request, pk):
+    from about.models import Gallery
+    obj = get_object_or_404(Gallery, pk=pk)
+    if request.method == 'POST':
+        obj.delete()
+        messages.success(request, 'Image deleted.')
+        return redirect('dashboard:gallery_list')
+    return render(request, 'dashboard/confirm_delete.html', {
+        'obj': obj, 'page_title': 'Delete Image',
+    })
+
+
+# ── TEAM ──────────────────────────────────────────────────────────────────────
+@staff_required
+def team_list(request):
+    from about.models import TeamMember
+    return render(request, 'dashboard/about/team.html', {
+        'items': TeamMember.objects.all().order_by('order'),
+        'page_title': 'Team Members',
+    })
+
+
+@staff_required
+def team_create(request):
+    from about.models import TeamMember
+    if request.method == 'POST':
+        TeamMember.objects.create(
+            name=request.POST.get('name', '').strip(),
+            role=request.POST.get('role', '').strip(),
+            social_platform=request.POST.get('social_platform', ''),
+            social_url=request.POST.get('social_url', ''),
+            order=int(request.POST.get('order', 0) or 0),
+            is_active=request.POST.get('is_active') == 'on',
+            image=request.FILES.get('image'),
+        )
+        messages.success(request, 'Team member added.')
+        return redirect('dashboard:team_list')
+    return render(request, 'dashboard/about/team_form.html', {
+        'page_title': 'Add Team Member', 'obj': None,
+    })
+
+
+@staff_required
+def team_edit(request, pk):
+    from about.models import TeamMember
+    obj = get_object_or_404(TeamMember, pk=pk)
+    if request.method == 'POST':
+        obj.name            = request.POST.get('name', obj.name).strip()
+        obj.role            = request.POST.get('role', obj.role).strip()
+        obj.social_platform = request.POST.get('social_platform', '')
+        obj.social_url      = request.POST.get('social_url', '')
+        obj.order           = int(request.POST.get('order', 0) or 0)
+        obj.is_active       = request.POST.get('is_active') == 'on'
+        if request.FILES.get('image'): obj.image = request.FILES['image']
+        obj.save()
+        messages.success(request, 'Team member updated.')
+        return redirect('dashboard:team_list')
+    return render(request, 'dashboard/about/team_form.html', {
+        'page_title': 'Edit Team Member', 'obj': obj,
+    })
+
+
+@staff_required
+def team_delete(request, pk):
+    from about.models import TeamMember
+    obj = get_object_or_404(TeamMember, pk=pk)
+    if request.method == 'POST':
+        obj.delete()
+        messages.success(request, 'Team member deleted.')
+        return redirect('dashboard:team_list')
+    return render(request, 'dashboard/confirm_delete.html', {
+        'obj': obj, 'page_title': 'Delete Team Member',
+    })
+
+
+# ── AJAX ──────────────────────────────────────────────────────────────────────
+@staff_required
+@require_http_methods(['POST'])
+def ajax_toggle(request):
+    model_map = {
+        'page':     ('pages',     'Page'),
+        'post':     ('blog',      'Post'),
+        'item':     ('portfolio', 'Item'),
+        'career':   ('contact',   'Career'),
+        'gallery':  ('about',     'Gallery'),
+        'strength': ('about',     'Strength'),
+        'team':     ('about',     'TeamMember'),
+        'project':  ('about',     'Project'),    # ← ADDED
+    }
+    model_name = request.POST.get('model')
+    pk         = request.POST.get('pk')
+    field      = request.POST.get('field')
+    if model_name not in model_map:
+        return JsonResponse({'ok': False, 'error': 'Unknown model'})
+    app, cls = model_map[model_name]
+    from django.apps import apps
+    Model = apps.get_model(app, cls)
+    obj = get_object_or_404(Model, pk=pk)
+    current = getattr(obj, field)
+    setattr(obj, field, not current)
+    obj.save(update_fields=[field])
+    return JsonResponse({'ok': True, 'value': not current})
