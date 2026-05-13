@@ -6,260 +6,722 @@
 </a>
 {% endblock %}
 
+{% block extra_head %}
+<style>
+.section-card{background:var(--surface,#0f1218);border:1px solid var(--border,#1e2535);border-radius:14px;overflow:hidden;margin-bottom:20px;}
+.section-header{padding:16px 22px;border-bottom:1px solid var(--border,#1e2535);display:flex;align-items:center;justify-content:space-between;background:rgba(1,96,178,.04);}
+.section-number{width:28px;height:28px;border-radius:50%;background:#0160b2;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.section-title{font-family:var(--font-head,'Syne',sans-serif);font-size:15px;font-weight:700;color:var(--text,#e8eaf0);margin-left:12px;}
+.section-body{padding:22px;}
+.upload-zone{border:2px dashed #1e2535;border-radius:10px;padding:24px 20px;text-align:center;cursor:pointer;transition:all .2s;background:rgba(255,255,255,.01);position:relative;}
+.upload-zone:hover,.upload-zone.drag-over{border-color:#0160b2;background:rgba(1,96,178,.05);}
+.upload-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.upload-zone-icon{font-size:28px;color:#374151;margin-bottom:8px;}
+.upload-zone-text{font-size:13px;color:#6b7280;}
+.upload-zone-text span{color:#0160b2;font-weight:600;}
+.current-img-wrap{display:flex;align-items:center;gap:14px;padding:14px;background:#0d0f14;border-radius:9px;border:1px solid #1e2535;margin-bottom:12px;}
+.current-img-thumb{border-radius:7px;object-fit:cover;border:1px solid #1e2535;}
+.banner-current{width:100%;border-radius:9px;object-fit:cover;max-height:200px;border:1px solid #1e2535;margin-bottom:12px;}
+.new-preview-wrap{display:none;margin-top:12px;}
+.new-preview-wrap img{border-radius:8px;border:1px solid #1e2535;}
+.rich-textarea{width:100%;min-height:130px;background:#161b24;border:1px solid #1e2535;border-radius:8px;padding:12px 14px;color:#e8eaf0;font-family:inherit;font-size:14px;resize:vertical;transition:border-color .15s;line-height:1.7;}
+.rich-textarea:focus{outline:none;border-color:#0160b2;}
+.repeater-item{background:#0d0f14;border:1px solid #1e2535;border-radius:10px;padding:18px;margin-bottom:14px;position:relative;animation:slideIn .2s ease;}
+@keyframes slideIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+.repeater-item-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid #1e2535;}
+.repeater-item-num{font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:1px;}
+.remove-btn{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:#ef4444;border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:inherit;transition:all .15s;}
+.remove-btn:hover{background:rgba(239,68,68,.2);}
+.add-more-btn{display:flex;align-items:center;gap:8px;width:100%;padding:13px;background:rgba(1,96,178,.06);border:2px dashed #1e2535;border-radius:10px;color:#0160b2;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s;justify-content:center;}
+.add-more-btn:hover{border-color:#0160b2;background:rgba(1,96,178,.1);}
+.brand-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+.brand-card{background:#0d0f14;border:1px solid #1e2535;border-radius:10px;padding:16px;animation:slideIn .2s ease;}
+.testimonial-card{background:#0d0f14;border:1px solid #1e2535;border-radius:10px;padding:18px;margin-bottom:14px;animation:slideIn .2s ease;position:relative;}
+.testimonial-card::before{content:'\201C';position:absolute;top:14px;right:18px;font-size:48px;color:#1e2535;font-family:Georgia,serif;line-height:1;}
+.sticky-footer{position:sticky;bottom:0;z-index:40;background:#0f1218;border-top:1px solid #1e2535;padding:14px 22px;display:flex;gap:12px;align-items:center;margin:0 -26px -26px;box-shadow:0 -8px 24px rgba(0,0,0,.4);}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.form-label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:#6b7280;margin-bottom:7px;}
+.form-input{width:100%;background:#161b24;border:1px solid #1e2535;border-radius:8px;padding:10px 14px;color:#e8eaf0;font-family:inherit;font-size:14px;transition:border-color .15s;}
+.form-input:focus{outline:none;border-color:#0160b2;}
+.form-group{margin-bottom:18px;}
+.badge-info{display:inline-block;font-size:10px;color:#4b5563;font-weight:400;margin-left:6px;text-transform:none;letter-spacing:0;}
+.replace-note{font-size:11px;color:#4b5563;margin-top:4px;}
+</style>
+{% endblock %}
+
 {% block content %}
-
-{% if not categories %}
-<div class="alert alert-error" style="margin-bottom:20px;">
-  <i class="fa-solid fa-triangle-exclamation"></i>
-  No categories found. Run <code>py manage.py seed_portfolio</code> to create Trading, Distribution and Services categories first.
-</div>
-{% endif %}
-
-<form method="post" enctype="multipart/form-data" id="itemForm">
+<form method="post" enctype="multipart/form-data" id="portfolioItemForm">
 {% csrf_token %}
 
-<div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;">
+<div style="display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start;">
 
-  <!-- LEFT: Item Details -->
-  <div style="display:flex;flex-direction:column;gap:16px;">
-    <div class="card">
-      <div class="card-header"><span class="card-title">Item Details</span></div>
-      <div class="card-body">
+  <!-- ══ LEFT COLUMN ════════════════════════════════════════════════════════ -->
+  <div>
+
+    <!-- ── SECTION 1: Hero Banner ──────────────────────────────────────── -->
+    <div class="section-card">
+      <div class="section-header">
+        <div style="display:flex;align-items:center;">
+          <div class="section-number">1</div>
+          <span class="section-title">Item Hero Banner</span>
+        </div>
+        <span style="font-size:11px;color:#4b5563;">Shown at top of the product page</span>
+      </div>
+      <div class="section-body">
 
         <div class="form-group">
-          <label class="form-label">Item Name *
-            <span style="color:#4b5563;font-size:10px;font-weight:400;margin-left:4px;">displayed in UPPERCASE</span>
-          </label>
-          <input type="text" name="name" id="nameInput" class="form-control"
-                 value="{{ obj.name|default:'' }}" required
-                 placeholder="e.g. CEMENT, ULTRATECH, KAVALAKAT GROUP"
-                 style="text-transform:uppercase;font-weight:700;letter-spacing:1px;font-size:13px;"
-                 oninput="this.value=this.value.toUpperCase();updatePreview()"/>
+          <label class="form-label">Banner Title *</label>
+          <input type="text" name="hero_title" class="form-input"
+                 value="{{ obj.hero_title|default:'' }}"
+                 placeholder="e.g. Products Power Progress Explore Our Offer."
+                 required/>
         </div>
 
-        <div class="form-group">
-          <label class="form-label">Description</label>
-          <textarea name="description" class="form-control" rows="4"
-            placeholder="Brief description (optional)…">{{ obj.description|default:'' }}</textarea>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Tags
-            <span style="color:#4b5563;font-size:10px;font-weight:400;margin-left:4px;">comma-separated</span>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Banner Image
+            <span class="badge-info">1920×600px recommended</span>
           </label>
-          <input type="text" name="tags" class="form-control"
-                 value="{{ obj.tags|default:'' }}"
-                 placeholder="cement, OPC, construction materials"/>
-        </div>
 
-        <div class="form-group">
-          <label class="form-label">Image
-            <span style="color:#4b5563;font-size:10px;font-weight:400;margin-left:4px;">optional</span>
-          </label>
-          {% if obj.image %}
-          <div style="margin-bottom:10px;display:flex;align-items:center;gap:12px;">
-            <img src="{{ obj.image.url }}" style="height:64px;width:64px;border-radius:8px;object-fit:cover;border:1px solid #1e2235;"/>
-            <div style="font-size:11px;color:#4b5563;">Upload below to replace</div>
-          </div>
+          {% if obj.banner_image %}
+          <!-- Show current banner -->
+          <img src="{{ obj.banner_image.url }}" class="banner-current" alt="Current banner"/>
+          <div class="replace-note"><i class="fa-solid fa-circle-info" style="color:#0160b2;"></i> Upload new image below to replace</div>
           {% endif %}
-          <input type="file" name="image" class="form-control" accept="image/*"/>
-        </div>
 
-        <div style="display:grid;grid-template-columns:120px 1fr;gap:16px;align-items:start;margin-bottom:20px;">
-          <div class="form-group" style="margin:0;">
-            <label class="form-label">Order</label>
-            <input type="number" name="order" class="form-control"
-                   value="{{ obj.order|default:0 }}" min="0" style="text-align:center;"/>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:12px;padding-top:26px;">
-            <div class="form-check">
-              <input type="checkbox" name="is_active" id="is_active"
-                     {% if obj.is_active or not obj %}checked{% endif %}/>
-              <label for="is_active" style="font-size:13px;">Visible on website</label>
-            </div>
-            <div class="form-check">
-              <input type="checkbox" name="is_featured" id="is_featured"
-                     {% if obj.is_featured %}checked{% endif %}/>
-              <label for="is_featured" style="font-size:13px;">
-                <span style="color:#eab308;">★</span> Featured item
-              </label>
+          <div class="upload-zone" id="bannerZone" style="margin-top:{% if obj.banner_image %}10px{% else %}0{% endif %};"
+               ondragover="handleDrag(event,'bannerZone')"
+               ondragleave="handleDragLeave(event,'bannerZone')"
+               ondrop="handleDrop(event,'bannerZone','bannerNewPreview','bannerInput')">
+            <input type="file" name="banner_image" id="bannerInput" accept="image/*"
+                   onchange="showNewPreview(this,'bannerNewPreview')"/>
+            <div class="upload-zone-icon"><i class="fa-solid fa-image"></i></div>
+            <div class="upload-zone-text">
+              <span>{% if obj.banner_image %}Replace image{% else %}Click to upload{% endif %}</span> or drag & drop<br/>
+              <small style="color:#374151;">JPG, PNG, WEBP · max 5MB</small>
             </div>
           </div>
-        </div>
-
-        <div class="flex gap-2">
-          <button type="submit" class="btn btn-primary" style="padding:10px 24px;">
-            <i class="fa-solid fa-floppy-disk"></i>
-            {% if obj %}Update Item{% else %}Add Item{% endif %}
-          </button>
-          {% if obj %}
-          <a href="{% url 'dashboard:portfolio_item_delete' obj.pk %}" class="btn btn-danger">
-            <i class="fa-solid fa-trash"></i> Delete
-          </a>
-          {% endif %}
+          <div class="new-preview-wrap" id="bannerNewPreview">
+            <div style="font-size:11px;color:#22c55e;margin-bottom:6px;"><i class="fa-solid fa-check"></i> New image selected:</div>
+            <img id="bannerNewPreviewImg" class="banner-current" style="margin-bottom:0;"/>
+          </div>
         </div>
 
       </div>
     </div>
-  </div>
 
-  <!-- RIGHT: Category + Preview -->
-  <div style="display:flex;flex-direction:column;gap:16px;">
-
-    <!-- Category Selector -->
-    <div class="card">
-      <div class="card-header"><span class="card-title">Category *</span></div>
-      <div class="card-body" style="padding:12px;">
-
-        <!-- Hidden input that actually submits -->
-        <input type="hidden" name="category" id="categoryHidden"
-               value="{{ obj.category_id|default:preselected_cat }}"/>
-
-        {% if not categories %}
-        <div style="padding:16px;text-align:center;color:#6b7280;font-size:13px;">
-          No categories. Run <code>seed_portfolio</code> first.
+    <!-- ── SECTION 2: About Section ──────────────────────────────────── -->
+    <div class="section-card">
+      <div class="section-header">
+        <div style="display:flex;align-items:center;">
+          <div class="section-number">2</div>
+          <span class="section-title">Item About Section</span>
         </div>
-        {% else %}
+        <span style="font-size:11px;color:#4b5563;">Description + image block</span>
+      </div>
+      <div class="section-body">
 
-        {% for cat in categories %}
-          <div id="catBtn_{{ cat.pk }}"
-               onclick="selectCat('{{ cat.pk }}')"
-               style="display:flex;align-items:center;gap:10px;
-                      padding:11px 14px;border-radius:8px;cursor:pointer;
-                      margin-bottom:6px;border:2px solid #1e2235;
-                      background:transparent;transition:all .15s;
-                      user-select:none;">
-            <div id="catDot_{{ cat.pk }}"
-                 style="width:10px;height:10px;border-radius:50%;
-                        background:{% if cat.name == 'Trading' %}#f97316{% elif cat.name == 'Distribution' %}#3b82f6{% else %}#22c55e{% endif %};
-                        flex-shrink:0;"></div>
-            <div>
-              <div style="font-size:12px;font-weight:700;letter-spacing:1px;
-                          text-transform:uppercase;color:#d1d5db;">{{ cat.name }}</div>
-              <div style="font-size:10px;color:#6b7280;margin-top:1px;">
-                {{ cat.item_count }} item{{ cat.item_count|pluralize }}
+        <div class="form-group">
+          <label class="form-label">About Title</label>
+          <input type="text" name="about_title" class="form-input"
+                 value="{{ obj.about_title|default:'' }}"
+                 placeholder="e.g. Kavalakat Reliable Steel Supplier in Kerala"/>
+        </div>
+
+        <div class="two-col">
+          <div class="form-group" style="margin:0;">
+            <label class="form-label">About Description</label>
+            <textarea name="about_description" class="rich-textarea" rows="8"
+                      placeholder="Write a detailed description...">{{ obj.about_description|default:'' }}</textarea>
+          </div>
+          <div class="form-group" style="margin:0;">
+            <label class="form-label">About Image</label>
+
+            {% if obj.about_image %}
+            <div class="current-img-wrap">
+              <img src="{{ obj.about_image.url }}" class="current-img-thumb" style="width:70px;height:70px;"/>
+              <div>
+                <div style="font-size:12px;color:#9ca3af;font-weight:600;">Current image</div>
+                <div class="replace-note">Upload below to replace</div>
               </div>
             </div>
-            <div style="margin-left:auto;">
-              <i id="catIcon_{{ cat.pk }}" class="fa-regular fa-circle"
-                 style="color:#374151;font-size:14px;"></i>
+            {% endif %}
+
+            <div class="upload-zone" style="min-height:140px;"
+                 id="aboutZone"
+                 ondragover="handleDrag(event,'aboutZone')"
+                 ondragleave="handleDragLeave(event,'aboutZone')"
+                 ondrop="handleDrop(event,'aboutZone','aboutNewPreview','aboutInput')">
+              <input type="file" name="about_image" id="aboutInput" accept="image/*"
+                     onchange="showNewPreview(this,'aboutNewPreview')"/>
+              <div class="upload-zone-icon" style="font-size:22px;"><i class="fa-solid fa-photo-film"></i></div>
+              <div class="upload-zone-text"><span>{% if obj.about_image %}Replace{% else %}Upload{% endif %} image</span></div>
+            </div>
+            <div class="new-preview-wrap" id="aboutNewPreview">
+              <img id="aboutNewPreviewImg" style="width:100%;border-radius:8px;max-height:140px;object-fit:cover;border:1px solid #1e2535;"/>
             </div>
           </div>
-        {% endfor %}
+        </div>
 
+      </div>
+    </div>
+
+    <!-- ── SECTION 3: Features ────────────────────────────────────────── -->
+    <div class="section-card">
+      <div class="section-header">
+        <div style="display:flex;align-items:center;">
+          <div class="section-number">3</div>
+          <span class="section-title">Item Features</span>
+        </div>
+        <span style="font-size:11px;color:#4b5563;">Accordion-style feature points</span>
+      </div>
+      <div class="section-body">
+
+        <div class="form-group">
+          <label class="form-label">Features Section Title</label>
+          <input type="text" name="features_title" class="form-input"
+                 value="{{ obj.features_title|default:'' }}"
+                 placeholder="e.g. Steel Products, Cement Products"/>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Feature Main Image
+            <span class="badge-info">Large image shown beside accordion</span>
+          </label>
+
+          {% if obj.features_image %}
+          <div class="current-img-wrap">
+            <img src="{{ obj.features_image.url }}" class="current-img-thumb" style="width:80px;height:60px;"/>
+            <div>
+              <div style="font-size:12px;color:#9ca3af;font-weight:600;">Current image</div>
+              <div class="replace-note">Upload below to replace</div>
+            </div>
+          </div>
+          {% endif %}
+
+          <div class="upload-zone" id="featImgZone" style="padding:14px;"
+               ondragover="handleDrag(event,'featImgZone')"
+               ondragleave="handleDragLeave(event,'featImgZone')"
+               ondrop="handleDrop(event,'featImgZone','featImgNewPreview','featImgInput')">
+            <input type="file" name="features_image" id="featImgInput" accept="image/*"
+                   onchange="showNewPreview(this,'featImgNewPreview')"/>
+            <div class="upload-zone-icon" style="font-size:20px;"><i class="fa-solid fa-image"></i></div>
+            <div class="upload-zone-text"><span>{% if obj.features_image %}Replace{% else %}Upload{% endif %}</span></div>
+          </div>
+          <div class="new-preview-wrap" id="featImgNewPreview">
+            <img id="featImgNewPreviewImg" style="max-height:100px;border-radius:8px;border:1px solid #1e2535;"/>
+          </div>
+        </div>
+
+        <label class="form-label" style="margin-bottom:12px;display:block;">Feature Items</label>
+        <div id="featuresContainer">
+          {% if feature_items %}
+            {% for fi in feature_items %}
+            <div class="repeater-item">
+              <div class="repeater-item-header">
+                <span class="repeater-item-num">Feature {{ forloop.counter }}</span>
+                <button type="button" class="remove-btn" onclick="removeItem(this)"><i class="fa-solid fa-xmark"></i> Remove</button>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Feature Title</label>
+                <input type="text" name="feature_title[]" class="form-input" value="{{ fi.title }}"/>
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Feature Description</label>
+                <textarea name="feature_desc[]" class="rich-textarea" rows="3">{{ fi.description }}</textarea>
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+          <div class="repeater-item">
+            <div class="repeater-item-header">
+              <span class="repeater-item-num">Feature 1</span>
+              <button type="button" class="remove-btn" onclick="removeItem(this)"><i class="fa-solid fa-xmark"></i> Remove</button>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Feature Title</label>
+              <input type="text" name="feature_title[]" class="form-input" placeholder="e.g. Trusted Steel Supplier"/>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Feature Description</label>
+              <textarea name="feature_desc[]" class="rich-textarea" rows="3" placeholder="A reliable name in the building materials industry..."></textarea>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+        <button type="button" class="add-more-btn" onclick="addFeature()">
+          <i class="fa-solid fa-plus"></i> Add Feature Item
+        </button>
+
+      </div>
+    </div>
+
+    <!-- ── SECTION 4: Trusted Brands ─────────────────────────────────── -->
+    <div class="section-card">
+      <div class="section-header">
+        <div style="display:flex;align-items:center;">
+          <div class="section-number">4</div>
+          <span class="section-title">Trusted Brands</span>
+        </div>
+        <span style="font-size:11px;color:#4b5563;">Brand cards shown on product page</span>
+      </div>
+      <div class="section-body">
+
+        <div class="form-group">
+          <label class="form-label">Section Heading</label>
+          <input type="text" name="brands_heading" class="form-input"
+                 value="{{ obj.brands_heading|default:'' }}"
+                 placeholder="e.g. Trusted Steel Brands We Supply"/>
+        </div>
+
+        <div class="brand-grid" id="brandsContainer">
+          {% if brand_items %}
+            {% for bi in brand_items %}
+            <div class="brand-card">
+              <div class="repeater-item-header" style="margin-bottom:14px;padding-bottom:10px;">
+                <span class="repeater-item-num">Brand {{ forloop.counter }}</span>
+                <button type="button" class="remove-btn" onclick="removeBrand(this)"><i class="fa-solid fa-xmark"></i></button>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Brand Logo</label>
+                {% if bi.logo_url %}
+                <div class="current-img-wrap" style="padding:10px;margin-bottom:8px;">
+                  <img src="{{ bi.logo_url }}" style="max-height:40px;max-width:80px;object-fit:contain;"/>
+                  <div style="font-size:11px;color:#4b5563;">Current logo</div>
+                </div>
+                {% endif %}
+                <div class="upload-zone" style="padding:10px;">
+                  <input type="file" name="brand_logo[]" accept="image/*" onchange="previewBrandLogo(this)"/>
+                  <div style="font-size:18px;color:#374151;"><i class="fa-solid fa-image"></i></div>
+                  <div class="upload-zone-text" style="font-size:11px;"><span>{% if bi.logo_url %}Replace{% else %}Upload{% endif %} logo</span></div>
+                </div>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Brand Name</label>
+                <input type="text" name="brand_title[]" class="form-input" value="{{ bi.title }}"/>
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Description</label>
+                <textarea name="brand_desc[]" class="rich-textarea" rows="3">{{ bi.description }}</textarea>
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+          <div class="brand-card">
+            <div class="repeater-item-header" style="margin-bottom:14px;padding-bottom:10px;">
+              <span class="repeater-item-num">Brand 1</span>
+              <button type="button" class="remove-btn" onclick="removeBrand(this)"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Brand Logo</label>
+              <div class="upload-zone" style="padding:10px;">
+                <input type="file" name="brand_logo[]" accept="image/*" onchange="previewBrandLogo(this)"/>
+                <div style="font-size:18px;color:#374151;"><i class="fa-solid fa-image"></i></div>
+                <div class="upload-zone-text" style="font-size:11px;"><span>Upload logo</span></div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Brand Name</label>
+              <input type="text" name="brand_title[]" class="form-input" placeholder="e.g. VIZAG"/>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Description</label>
+              <textarea name="brand_desc[]" class="rich-textarea" rows="3" placeholder="Brand description..."></textarea>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+        <button type="button" class="add-more-btn" style="margin-top:14px;" onclick="addBrand()">
+          <i class="fa-solid fa-plus"></i> Add Brand
+        </button>
+
+      </div>
+    </div>
+
+    <!-- ── SECTION 5: Testimonials ────────────────────────────────────── -->
+    <div class="section-card">
+      <div class="section-header">
+        <div style="display:flex;align-items:center;">
+          <div class="section-number">5</div>
+          <span class="section-title">Client Testimonials</span>
+        </div>
+        <span style="font-size:11px;color:#4b5563;">Customer reviews</span>
+      </div>
+      <div class="section-body">
+
+        <div id="testimonialsContainer">
+          {% if testimonial_items %}
+            {% for ti in testimonial_items %}
+            <div class="testimonial-card">
+              <div class="repeater-item-header" style="margin-bottom:14px;padding-bottom:10px;">
+                <span class="repeater-item-num">Testimonial {{ forloop.counter }}</span>
+                <button type="button" class="remove-btn" onclick="removeItem(this)"><i class="fa-solid fa-xmark"></i> Remove</button>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Testimonial Title</label>
+                <input type="text" name="testimonial_title[]" class="form-input" value="{{ ti.title }}"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Review Text</label>
+                <textarea name="testimonial_desc[]" class="rich-textarea" rows="3">{{ ti.description }}</textarea>
+              </div>
+              <div class="form-group" style="margin:0;">
+                <label class="form-label">Client Name</label>
+                <input type="text" name="testimonial_name[]" class="form-input" value="{{ ti.client_name }}"/>
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+          <div class="testimonial-card">
+            <div class="repeater-item-header" style="margin-bottom:14px;padding-bottom:10px;">
+              <span class="repeater-item-num">Testimonial 1</span>
+              <button type="button" class="remove-btn" onclick="removeItem(this)"><i class="fa-solid fa-xmark"></i> Remove</button>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Testimonial Title</label>
+              <input type="text" name="testimonial_title[]" class="form-input" placeholder="e.g. OUTSTANDING MATERIAL QUALITY!"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Review Text</label>
+              <textarea name="testimonial_desc[]" class="rich-textarea" rows="3" placeholder="Customer review text..."></textarea>
+            </div>
+            <div class="form-group" style="margin:0;">
+              <label class="form-label">Client Name & Title</label>
+              <input type="text" name="testimonial_name[]" class="form-input" placeholder="e.g. Akash Menon, Founder Axleo"/>
+            </div>
+          </div>
+          {% endif %}
+        </div>
+        <button type="button" class="add-more-btn" onclick="addTestimonial()">
+          <i class="fa-solid fa-plus"></i> Add Testimonial
+        </button>
+
+      </div>
+    </div>
+
+    <!-- Sticky footer -->
+    <div class="sticky-footer">
+      <button type="submit" class="btn btn-primary" style="padding:12px 32px;font-size:15px;font-weight:700;">
+        <i class="fa-solid fa-floppy-disk"></i>
+        {% if obj %}Update Portfolio Item{% else %}Save Portfolio Item{% endif %}
+      </button>
+      <a href="{% url 'dashboard:portfolio_list' %}" class="btn btn-secondary" style="padding:12px 20px;">
+        <i class="fa-solid fa-xmark"></i> Cancel
+      </a>
+      {% if obj %}
+      <a href="{% url 'dashboard:portfolio_item_delete' obj.pk %}"
+         class="btn btn-danger" style="margin-left:auto;padding:12px 20px;">
+        <i class="fa-solid fa-trash"></i> Delete Item
+      </a>
+      {% endif %}
+    </div>
+
+  </div>
+
+  <!-- ══ RIGHT COLUMN ═══════════════════════════════════════════════════════ -->
+  <div style="display:flex;flex-direction:column;gap:16px;position:sticky;top:20px;">
+
+    <!-- Category Selector -->
+    <div class="section-card" style="margin-bottom:0;">
+      <div class="section-header">
+        <span class="section-title" style="margin-left:0;">Category *</span>
+      </div>
+      <div class="section-body" style="padding:12px;">
+        <input type="hidden" name="category" id="categoryInput"
+               value="{{ obj.category_id|default:preselected_cat }}"/>
+
+        {% for cat in categories %}
+        {% if cat.name == 'Trading' %}
+        <div class="cat-btn" data-id="{{ cat.pk }}"
+             onclick="selectCat('{{ cat.pk }}','#f97316','rgba(249,115,22,.08)')"
+             style="display:flex;align-items:center;gap:12px;padding:13px;border-radius:9px;cursor:pointer;margin-bottom:8px;transition:all .15s;
+                    border:2px solid {% if obj.category_id == cat.pk or preselected_cat == cat.pk|stringformat:'s' %}#f97316{% else %}#1e2535{% endif %};
+                    background:{% if obj.category_id == cat.pk or preselected_cat == cat.pk|stringformat:'s' %}rgba(249,115,22,.08){% else %}transparent{% endif %};">
+          <i class="fa-solid fa-industry" style="color:#f97316;width:16px;"></i>
+          <div style="flex:1;">
+            <div style="font-size:12px;font-weight:700;color:#d1d5db;text-transform:uppercase;letter-spacing:1px;">{{ cat.name }}</div>
+            <div style="font-size:10px;color:#4b5563;">{{ cat.item_count }} item{{ cat.item_count|pluralize }}</div>
+          </div>
+          <i class="cat-ck {% if obj.category_id == cat.pk or preselected_cat == cat.pk|stringformat:'s' %}fa-solid fa-circle-check{% else %}fa-regular fa-circle{% endif %}"
+             style="color:{% if obj.category_id == cat.pk or preselected_cat == cat.pk|stringformat:'s' %}#f97316{% else %}#374151{% endif %};font-size:15px;"></i>
+        </div>
+
+        {% elif cat.name == 'Distribution' %}
+        <div class="cat-btn" data-id="{{ cat.pk }}"
+             onclick="selectCat('{{ cat.pk }}','#3b82f6','rgba(59,130,246,.08)')"
+             style="display:flex;align-items:center;gap:12px;padding:13px;border-radius:9px;cursor:pointer;margin-bottom:8px;transition:all .15s;
+                    border:2px solid {% if obj.category_id == cat.pk or preselected_cat == cat.pk|stringformat:'s' %}#3b82f6{% else %}#1e2535{% endif %};
+                    background:{% if obj.category_id == cat.pk or preselected_cat == cat.pk|stringformat:'s' %}rgba(59,130,246,.08){% else %}transparent{% endif %};">
+          <i class="fa-solid fa-truck" style="color:#3b82f6;width:16px;"></i>
+          <div style="flex:1;">
+            <div style="font-size:12px;font-weight:700;color:#d1d5db;text-transform:uppercase;letter-spacing:1px;">{{ cat.name }}</div>
+            <div style="font-size:10px;color:#4b5563;">{{ cat.item_count }} item{{ cat.item_count|pluralize }}</div>
+          </div>
+          <i class="cat-ck {% if obj.category_id == cat.pk or preselected_cat == cat.pk|stringformat:'s' %}fa-solid fa-circle-check{% else %}fa-regular fa-circle{% endif %}"
+             style="color:{% if obj.category_id == cat.pk or preselected_cat == cat.pk|stringformat:'s' %}#3b82f6{% else %}#374151{% endif %};font-size:15px;"></i>
+        </div>
+
+        {% else %}
+        <div class="cat-btn" data-id="{{ cat.pk }}"
+             onclick="selectCat('{{ cat.pk }}','#22c55e','rgba(34,197,94,.08)')"
+             style="display:flex;align-items:center;gap:12px;padding:13px;border-radius:9px;cursor:pointer;margin-bottom:8px;transition:all .15s;
+                    border:2px solid {% if obj.category_id == cat.pk or preselected_cat == cat.pk|stringformat:'s' %}#22c55e{% else %}#1e2535{% endif %};
+                    background:{% if obj.category_id == cat.pk or preselected_cat == cat.pk|stringformat:'s' %}rgba(34,197,94,.08){% else %}transparent{% endif %};">
+          <i class="fa-solid fa-gears" style="color:#22c55e;width:16px;"></i>
+          <div style="flex:1;">
+            <div style="font-size:12px;font-weight:700;color:#d1d5db;text-transform:uppercase;letter-spacing:1px;">{{ cat.name }}</div>
+            <div style="font-size:10px;color:#4b5563;">{{ cat.item_count }} item{{ cat.item_count|pluralize }}</div>
+          </div>
+          <i class="cat-ck {% if obj.category_id == cat.pk or preselected_cat == cat.pk|stringformat:'s' %}fa-solid fa-circle-check{% else %}fa-regular fa-circle{% endif %}"
+             style="color:{% if obj.category_id == cat.pk or preselected_cat == cat.pk|stringformat:'s' %}#22c55e{% else %}#374151{% endif %};font-size:15px;"></i>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Basic Info -->
+    <div class="section-card" style="margin-bottom:0;">
+      <div class="section-header">
+        <span class="section-title" style="margin-left:0;">Basic Info</span>
+      </div>
+      <div class="section-body">
+        <div class="form-group">
+          <label class="form-label">Item Name *<span class="badge-info">UPPERCASE</span></label>
+          <input type="text" name="name" class="form-input"
+                 value="{{ obj.name|default:'' }}" required
+                 style="text-transform:uppercase;font-weight:700;letter-spacing:1px;"
+                 placeholder="e.g. CEMENT"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tags<span class="badge-info">comma-separated</span></label>
+          <input type="text" name="tags" class="form-input" value="{{ obj.tags|default:'' }}"
+                 placeholder="cement, OPC, Kerala"/>
+        </div>
+        <div style="display:grid;grid-template-columns:80px 1fr;gap:14px;margin-bottom:16px;align-items:end;">
+          <div>
+            <label class="form-label">Order</label>
+            <input type="number" name="order" class="form-input"
+                   value="{{ obj.order|default:1 }}" min="1" style="text-align:center;font-weight:700;"/>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;padding-bottom:2px;">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+              <input type="checkbox" name="is_active"
+                     {% if obj.is_active or not obj %}checked{% endif %}
+                     style="accent-color:#0160b2;width:16px;height:16px;"/>
+              <span style="font-size:13px;color:#d1d5db;">Visible on website</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+              <input type="checkbox" name="is_featured"
+                     {% if obj.is_featured %}checked{% endif %}
+                     style="accent-color:#eab308;width:16px;height:16px;"/>
+              <span style="font-size:13px;color:#d1d5db;"><span style="color:#eab308;">★</span> Featured</span>
+            </label>
+          </div>
+        </div>
+        {% if obj %}
+        <div style="padding:10px;background:#0d0f14;border-radius:8px;font-size:11px;color:#4b5563;">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <span>ID</span><span style="color:#9ca3af;">#{{ obj.pk }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <span>Category</span>
+            <span class="badge {% if obj.category.name == 'Trading' %}badge-orange{% elif obj.category.name == 'Distribution' %}badge-blue{% else %}badge-green{% endif %}" style="font-size:10px;">{{ obj.category.name }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+            <span>Created</span><span style="color:#9ca3af;">{{ obj.created_at|date:"d M Y" }}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;">
+            <span>Updated</span><span style="color:#9ca3af;">{{ obj.updated_at|date:"d M Y H:i" }}</span>
+          </div>
+        </div>
         {% endif %}
       </div>
     </div>
 
-    <!-- Live Preview -->
-    <div class="card">
-      <div class="card-header">
-        <span style="font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;font-weight:600;">
-          Website Preview
+    <!-- Portfolio List Preview -->
+    <div class="section-card" style="margin-bottom:0;">
+      <div class="section-header">
+        <span class="section-title" style="margin-left:0;font-size:11px;color:#6b7280;text-transform:uppercase;letter-spacing:1px;">
+          <i class="fa-solid fa-eye" style="color:#0160b2;margin-right:5px;"></i>List Preview
         </span>
       </div>
-      <div style="background:#f0f4f8;border-radius:0 0 10px 10px;padding:16px;">
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+      <div style="padding:14px;background:#f0f4f8;border-radius:0 0 14px 14px;">
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
           {% for cat in categories %}
-          <div style="min-width:0;">
-            <div style="font-family:sans-serif;font-size:10px;font-weight:800;
-                        text-transform:uppercase;letter-spacing:1.5px;
-                        color:#1a2340;margin-bottom:5px;">{{ cat.name }}</div>
-            <div style="height:2px;background:#1a3a8f;margin-bottom:8px;"></div>
-            {% for item in cat.items.all %}
-            <div style="font-size:9px;font-weight:700;text-transform:uppercase;
-                        letter-spacing:.8px;color:#1a2340;padding:4px 0;
-                        border-bottom:.5px solid #c8cdd6;
-                        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-              {{ item.name }}
-            </div>
+          <div>
+            <div style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:1.2px;color:#1a2340;margin-bottom:4px;">{{ cat.name }}</div>
+            <div style="height:2px;background:#0160b2;margin-bottom:6px;"></div>
+            {% for item in cat.items.all|slice:":3" %}
+            <div style="font-size:8px;font-weight:600;text-transform:uppercase;color:{% if obj and item.pk == obj.pk %}#0160b2{% else %}#1a2340{% endif %};padding:3px 0;border-bottom:.5px solid #dde;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;{% if obj and item.pk == obj.pk %}border-left:2px solid #0160b2;padding-left:3px;{% endif %}">{{ item.name }}</div>
             {% endfor %}
-            <div id="newPreview_{{ cat.pk }}"
-                 style="font-size:9px;font-weight:700;text-transform:uppercase;
-                        letter-spacing:.8px;padding:4px 0 4px 5px;
-                        border-bottom:.5px solid #b3c0d9;display:none;
-                        color:#1a3a8f;border-left:2px solid #1a3a8f;">—</div>
+            <div id="preview_{{ cat.pk }}" style="display:none;font-size:8px;font-weight:700;text-transform:uppercase;padding:3px 0 3px 4px;border-bottom:.5px solid #b3c0d9;color:#0160b2;border-left:2px solid #0160b2;"></div>
           </div>
           {% endfor %}
         </div>
       </div>
     </div>
 
-  </div>
+  </div><!-- end right col -->
 </div>
 </form>
 
 <script>
-const CAT_COLORS = {
+const CAT_DATA = {
   {% for cat in categories %}
-  '{{ cat.pk }}': {
-    col: '{% if cat.name == "Trading" %}#f97316{% elif cat.name == "Distribution" %}#3b82f6{% else %}#22c55e{% endif %}',
-    bg:  '{% if cat.name == "Trading" %}rgba(249,115,22,.08){% elif cat.name == "Distribution" %}rgba(59,130,246,.08){% else %}rgba(34,197,94,.08){% endif %}'
-  },
+  '{{ cat.pk }}': { col: '{% if cat.name == "Trading" %}#f97316{% elif cat.name == "Distribution" %}#3b82f6{% else %}#22c55e{% endif %}', bg: '{% if cat.name == "Trading" %}rgba(249,115,22,.08){% elif cat.name == "Distribution" %}rgba(59,130,246,.08){% else %}rgba(34,197,94,.08){% endif %}' },
   {% endfor %}
 };
-
 let selectedCatId = '{{ obj.category_id|default:preselected_cat }}';
 
-function selectCat(id) {
+function selectCat(id, col, bg) {
   selectedCatId = id;
-  document.getElementById('categoryHidden').value = id;
-
-  // Reset all buttons
-  Object.keys(CAT_COLORS).forEach(function(catId) {
-    const btn  = document.getElementById('catBtn_' + catId);
-    const icon = document.getElementById('catIcon_' + catId);
-    if (btn) {
-      btn.style.border     = '2px solid #1e2235';
-      btn.style.background = 'transparent';
-    }
-    if (icon) {
-      icon.className = 'fa-regular fa-circle';
-      icon.style.color = '#374151';
+  document.getElementById('categoryInput').value = id;
+  document.querySelectorAll('.cat-btn').forEach(btn => {
+    const bid = btn.dataset.id, d = CAT_DATA[bid], ck = btn.querySelector('.cat-ck');
+    if (bid === id) {
+      btn.style.border = `2px solid ${d.col}`; btn.style.background = d.bg;
+      ck.className = 'cat-ck fa-solid fa-circle-check'; ck.style.color = d.col;
+    } else {
+      btn.style.border = '2px solid #1e2535'; btn.style.background = 'transparent';
+      ck.className = 'cat-ck fa-regular fa-circle'; ck.style.color = '#374151';
     }
   });
-
-  // Highlight selected
-  const selBtn  = document.getElementById('catBtn_' + id);
-  const selIcon = document.getElementById('catIcon_' + id);
-  const d       = CAT_COLORS[id];
-  if (selBtn && d) {
-    selBtn.style.border     = '2px solid ' + d.col;
-    selBtn.style.background = d.bg;
-  }
-  if (selIcon && d) {
-    selIcon.className = 'fa-solid fa-circle-check';
-    selIcon.style.color = d.col;
-  }
-
-  updatePreview();
+  const nameVal = document.querySelector('[name="name"]').value.toUpperCase().trim();
+  Object.keys(CAT_DATA).forEach(cid => { const el = document.getElementById('preview_'+cid); if(el) el.style.display='none'; });
+  if (nameVal && id) { const el = document.getElementById('preview_'+id); if(el){ el.textContent=nameVal; el.style.display='block'; }}
 }
 
-function updatePreview() {
-  const name = (document.getElementById('nameInput').value || '').trim();
+document.querySelector('[name="name"]').addEventListener('input', function() {
+  this.value = this.value.toUpperCase();
+  Object.keys(CAT_DATA).forEach(cid => { const el = document.getElementById('preview_'+cid); if(el) el.style.display='none'; });
+  if (this.value.trim() && selectedCatId) { const el = document.getElementById('preview_'+selectedCatId); if(el){ el.textContent=this.value.trim(); el.style.display='block'; }}
+});
 
-  // Hide all previews
-  Object.keys(CAT_COLORS).forEach(function(catId) {
-    const el = document.getElementById('newPreview_' + catId);
-    if (el) el.style.display = 'none';
-  });
+// Show new file preview (for replace scenarios)
+function showNewPreview(input, previewId) {
+  if (!input.files || !input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const wrap = document.getElementById(previewId);
+    wrap.style.display = 'block';
+    const img = document.getElementById(previewId + 'Img');
+    if (img) img.src = e.target.result;
+  };
+  reader.readAsDataURL(input.files[0]);
+}
 
-  // Show in selected category
-  if (name && selectedCatId) {
-    const el = document.getElementById('newPreview_' + selectedCatId);
-    if (el) {
-      el.textContent = name.toUpperCase();
-      el.style.display = 'block';
+function previewBrandLogo(input) {
+  if (!input.files || !input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const zone = input.parentElement;
+    let img = zone.querySelector('img.brand-logo-preview');
+    if (!img) {
+      img = document.createElement('img');
+      img.className = 'brand-logo-preview';
+      img.style.cssText = 'max-height:50px;object-fit:contain;margin-top:6px;display:block;border-radius:4px;';
+      zone.appendChild(img);
     }
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+function handleDrag(e, zoneId) { e.preventDefault(); document.getElementById(zoneId)?.classList.add('drag-over'); }
+function handleDragLeave(e, zoneId) { document.getElementById(zoneId)?.classList.remove('drag-over'); }
+function handleDrop(e, zoneId, previewId, inputId) {
+  e.preventDefault();
+  document.getElementById(zoneId)?.classList.remove('drag-over');
+  const files = e.dataTransfer.files;
+  if (files.length) {
+    const input = document.getElementById(inputId);
+    const dt = new DataTransfer(); dt.items.add(files[0]); input.files = dt.files;
+    showNewPreview(input, previewId);
   }
 }
 
-// Init on page load
+// Repeater counts
+let featCount = {{ feature_items|length|default:1 }};
+let brandCount = {{ brand_items|length|default:1 }};
+let testimonialCount = {{ testimonial_items|length|default:1 }};
+
+function addFeature() {
+  featCount++;
+  document.getElementById('featuresContainer').insertAdjacentHTML('beforeend', `
+  <div class="repeater-item">
+    <div class="repeater-item-header">
+      <span class="repeater-item-num">Feature ${featCount}</span>
+      <button type="button" class="remove-btn" onclick="removeItem(this)"><i class="fa-solid fa-xmark"></i> Remove</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Feature Title</label>
+      <input type="text" name="feature_title[]" class="form-input" placeholder="e.g. Quality Assurance"/>
+    </div>
+    <div class="form-group" style="margin:0;">
+      <label class="form-label">Feature Description</label>
+      <textarea name="feature_desc[]" class="rich-textarea" rows="3" placeholder="Describe this feature..."></textarea>
+    </div>
+  </div>`);
+}
+
+function addBrand() {
+  brandCount++;
+  document.getElementById('brandsContainer').insertAdjacentHTML('beforeend', `
+  <div class="brand-card">
+    <div class="repeater-item-header" style="margin-bottom:14px;padding-bottom:10px;">
+      <span class="repeater-item-num">Brand ${brandCount}</span>
+      <button type="button" class="remove-btn" onclick="removeBrand(this)"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Brand Logo</label>
+      <div class="upload-zone" style="padding:10px;">
+        <input type="file" name="brand_logo[]" accept="image/*" onchange="previewBrandLogo(this)"/>
+        <div style="font-size:18px;color:#374151;"><i class="fa-solid fa-image"></i></div>
+        <div class="upload-zone-text" style="font-size:11px;"><span>Upload logo</span></div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Brand Name</label>
+      <input type="text" name="brand_title[]" class="form-input" placeholder="e.g. ULTRATECH"/>
+    </div>
+    <div class="form-group" style="margin:0;">
+      <label class="form-label">Description</label>
+      <textarea name="brand_desc[]" class="rich-textarea" rows="3" placeholder="Brand description..."></textarea>
+    </div>
+  </div>`);
+}
+
+function addTestimonial() {
+  testimonialCount++;
+  document.getElementById('testimonialsContainer').insertAdjacentHTML('beforeend', `
+  <div class="testimonial-card">
+    <div class="repeater-item-header" style="margin-bottom:14px;padding-bottom:10px;">
+      <span class="repeater-item-num">Testimonial ${testimonialCount}</span>
+      <button type="button" class="remove-btn" onclick="removeItem(this)"><i class="fa-solid fa-xmark"></i> Remove</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Testimonial Title</label>
+      <input type="text" name="testimonial_title[]" class="form-input" placeholder="e.g. EXCELLENT SERVICE!"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Review Text</label>
+      <textarea name="testimonial_desc[]" class="rich-textarea" rows="3" placeholder="Customer review..."></textarea>
+    </div>
+    <div class="form-group" style="margin:0;">
+      <label class="form-label">Client Name & Title</label>
+      <input type="text" name="testimonial_name[]" class="form-input" placeholder="e.g. Rajan Kumar, Builder"/>
+    </div>
+  </div>`);
+}
+
+function removeItem(btn) { btn.closest('.repeater-item,.testimonial-card')?.remove(); }
+function removeBrand(btn) { btn.closest('.brand-card')?.remove(); }
+
 document.addEventListener('DOMContentLoaded', function() {
-  if (selectedCatId) {
-    selectCat(selectedCatId);
+  if (selectedCatId && CAT_DATA[selectedCatId]) {
+    const d = CAT_DATA[selectedCatId];
+    selectCat(selectedCatId, d.col, d.bg);
   }
-  updatePreview();
 });
 </script>
 {% endblock %}
