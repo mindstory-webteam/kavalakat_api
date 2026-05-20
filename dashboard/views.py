@@ -322,6 +322,100 @@ def enquiry_delete(request, pk):
 
 
 # ── PORTFOLIO ─────────────────────────────────────────────────────────────────
+
+def _parse_json_list(raw):
+    """Safely parse a JSON string into a list; returns [] on failure."""
+    try:
+        data = json.loads(raw) if raw else []
+        return data if isinstance(data, list) else []
+    except (json.JSONDecodeError, TypeError):
+        return []
+
+
+def _build_portfolio_context(request, obj, categories):
+    """
+    Build the extra context that form.html needs:
+      feature_items, brand_items, testimonial_items
+    These are parsed from the model's JSON fields so they display on the edit page.
+    """
+    feature_items     = []
+    brand_items       = []
+    testimonial_items = []
+
+    if obj:
+        feature_items     = _parse_json_list(obj.features_json)
+        brand_items       = _parse_json_list(obj.brands_json)
+        testimonial_items = _parse_json_list(obj.testimonials_json)
+
+    return {
+        'categories':       categories,
+        'obj':              obj,
+        'feature_items':    feature_items,
+        'brand_items':      brand_items,
+        'testimonial_items': testimonial_items,
+    }
+
+
+def _collect_post_json(request):
+    """
+    Collect the repeater field arrays from POST and build the three JSON strings
+    (features_json, brands_json, testimonials_json) ready to store.
+    Brand logos are uploaded files; we store only the relative /media/... path.
+    """
+    import os
+    from django.conf import settings
+
+    # ── Features ─────────────────────────────────────────────────────────────
+    feat_titles = request.POST.getlist('feature_title[]')
+    feat_descs  = request.POST.getlist('feature_desc[]')
+    features = []
+    for t, d in zip(feat_titles, feat_descs):
+        if t.strip() or d.strip():
+            features.append({'title': t.strip(), 'description': d.strip()})
+
+    # ── Brands ───────────────────────────────────────────────────────────────
+    brand_titles = request.POST.getlist('brand_title[]')
+    brand_descs  = request.POST.getlist('brand_desc[]')
+    brand_logos  = request.FILES.getlist('brand_logo[]')
+    brands = []
+    for idx, (t, d) in enumerate(zip(brand_titles, brand_descs)):
+        logo_url = ''
+        if idx < len(brand_logos) and brand_logos[idx]:
+            logo_file = brand_logos[idx]
+            save_dir  = os.path.join(settings.MEDIA_ROOT, 'portfolio', 'brands')
+            os.makedirs(save_dir, exist_ok=True)
+            fname = logo_file.name.replace(' ', '_')
+            save_path = os.path.join(save_dir, fname)
+            with open(save_path, 'wb+') as dest:
+                for chunk in logo_file.chunks():
+                    dest.write(chunk)
+            logo_url = f'/media/portfolio/brands/{fname}'
+        brands.append({
+            'title':       t.strip(),
+            'description': d.strip(),
+            'logo_url':    logo_url,
+        })
+
+    # ── Testimonials ──────────────────────────────────────────────────────────
+    test_titles = request.POST.getlist('testimonial_title[]')
+    test_descs  = request.POST.getlist('testimonial_desc[]')
+    test_names  = request.POST.getlist('testimonial_name[]')
+    testimonials = []
+    for t, d, n in zip(test_titles, test_descs, test_names):
+        if t.strip() or d.strip():
+            testimonials.append({
+                'title':       t.strip(),
+                'description': d.strip(),
+                'client_name': n.strip(),
+            })
+
+    return (
+        json.dumps(features,     ensure_ascii=False),
+        json.dumps(brands,       ensure_ascii=False),
+        json.dumps(testimonials, ensure_ascii=False),
+    )
+
+
 @staff_required
 def portfolio_list(request):
     from portfolio.models import Category, Item
@@ -361,10 +455,14 @@ def portfolio_create(request):
     preselected_cat = request.GET.get('cat', '') or request.GET.get('category', '')
     categories = (
         Category.objects
-        .annotate(item_count=Count('items'))
+        .annotate(
+            item_count=Count('items'),
+            active_item_count=Count('items', filter=Q(items__is_active=True)),
+        )
         .prefetch_related('items')
         .order_by('order', 'name')
     )
+
     if request.method == 'POST':
         name   = request.POST.get('name', '').strip().upper()
         cat_id = request.POST.get('category', '').strip()
@@ -374,7 +472,9 @@ def portfolio_create(request):
             messages.error(request, 'Please select a category.')
         else:
             try:
+                features_json, brands_json, testimonials_json = _collect_post_json(request)
                 Item.objects.create(
+                    # ── Basic ───────────────────────────────────────────────
                     name=name,
                     description=request.POST.get('description', ''),
                     tags=request.POST.get('tags', ''),
@@ -383,15 +483,31 @@ def portfolio_create(request):
                     is_active=request.POST.get('is_active') == 'on',
                     order=int(request.POST.get('order', 0) or 0),
                     image=request.FILES.get('image'),
+                    # ── Section 1: Hero Banner ───────────────────────────────
+                    hero_title=request.POST.get('hero_title', ''),
+                    banner_image=request.FILES.get('banner_image'),
+                    # ── Section 2: About ─────────────────────────────────────
+                    about_title=request.POST.get('about_title', ''),
+                    about_description=request.POST.get('about_description', ''),
+                    about_image=request.FILES.get('about_image'),
+                    # ── Section 3: Features ──────────────────────────────────
+                    features_title=request.POST.get('features_title', ''),
+                    features_image=request.FILES.get('features_image'),
+                    features_json=features_json,
+                    # ── Section 4: Brands ────────────────────────────────────
+                    brands_heading=request.POST.get('brands_heading', ''),
+                    brands_json=brands_json,
+                    # ── Section 5: Testimonials ──────────────────────────────
+                    testimonials_json=testimonials_json,
                 )
                 messages.success(request, f'Item "{name}" created successfully.')
                 return redirect('dashboard:portfolio_list')
             except Exception as e:
                 messages.error(request, f'Error creating item: {e}')
-    return render(request, 'dashboard/portfolio/form.html', {
-        'categories': categories, 'page_title': 'Add Portfolio Item',
-        'obj': None, 'preselected_cat': preselected_cat,
-    })
+
+    ctx = _build_portfolio_context(request, None, categories)
+    ctx.update({'page_title': 'Add Portfolio Item', 'preselected_cat': preselected_cat})
+    return render(request, 'dashboard/portfolio/form.html', ctx)
 
 
 @staff_required
@@ -400,10 +516,14 @@ def portfolio_edit(request, pk):
     obj = get_object_or_404(Item, pk=pk)
     categories = (
         Category.objects
-        .annotate(item_count=Count('items'))
+        .annotate(
+            item_count=Count('items'),
+            active_item_count=Count('items', filter=Q(items__is_active=True)),
+        )
         .prefetch_related('items')
         .order_by('order', 'name')
     )
+
     if request.method == 'POST':
         name   = request.POST.get('name', obj.name).strip().upper()
         cat_id = request.POST.get('category', '').strip()
@@ -412,6 +532,9 @@ def portfolio_edit(request, pk):
         elif not cat_id:
             messages.error(request, 'Please select a category.')
         else:
+            features_json, brands_json, testimonials_json = _collect_post_json(request)
+
+            # ── Basic ────────────────────────────────────────────────────────
             obj.name        = name
             obj.description = request.POST.get('description', '')
             obj.tags        = request.POST.get('tags', '')
@@ -419,14 +542,43 @@ def portfolio_edit(request, pk):
             obj.is_featured = request.POST.get('is_featured') == 'on'
             obj.is_active   = request.POST.get('is_active') == 'on'
             obj.order       = int(request.POST.get('order', 0) or 0)
-            if request.FILES.get('image'): obj.image = request.FILES['image']
+            if request.FILES.get('image'):
+                obj.image = request.FILES['image']
+
+            # ── Section 1: Hero Banner ────────────────────────────────────────
+            obj.hero_title = request.POST.get('hero_title', '')
+            if request.FILES.get('banner_image'):
+                obj.banner_image = request.FILES['banner_image']
+
+            # ── Section 2: About ──────────────────────────────────────────────
+            obj.about_title       = request.POST.get('about_title', '')
+            obj.about_description = request.POST.get('about_description', '')
+            if request.FILES.get('about_image'):
+                obj.about_image = request.FILES['about_image']
+
+            # ── Section 3: Features ───────────────────────────────────────────
+            obj.features_title = request.POST.get('features_title', '')
+            if request.FILES.get('features_image'):
+                obj.features_image = request.FILES['features_image']
+            obj.features_json = features_json
+
+            # ── Section 4: Brands ─────────────────────────────────────────────
+            obj.brands_heading = request.POST.get('brands_heading', '')
+            obj.brands_json    = brands_json
+
+            # ── Section 5: Testimonials ───────────────────────────────────────
+            obj.testimonials_json = testimonials_json
+
             obj.save()
             messages.success(request, f'Item "{obj.name}" updated.')
             return redirect('dashboard:portfolio_list')
-    return render(request, 'dashboard/portfolio/form.html', {
-        'categories': categories, 'page_title': f'Edit — {obj.name}',
-        'obj': obj, 'preselected_cat': str(obj.category_id),
+
+    ctx = _build_portfolio_context(request, obj, categories)
+    ctx.update({
+        'page_title':      f'Edit — {obj.name}',
+        'preselected_cat': str(obj.category_id),
     })
+    return render(request, 'dashboard/portfolio/form.html', ctx)
 
 
 @staff_required
@@ -937,7 +1089,7 @@ def ajax_toggle(request):
         'gallery':  ('about',     'Gallery'),
         'strength': ('about',     'Strength'),
         'team':     ('about',     'TeamMember'),
-        'project':  ('about',     'Project'),    # ← ADDED
+        'project':  ('about',     'Project'),
     }
     model_name = request.POST.get('model')
     pk         = request.POST.get('pk')

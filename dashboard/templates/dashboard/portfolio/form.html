@@ -24,7 +24,7 @@
 .banner-current{width:100%;border-radius:9px;object-fit:cover;max-height:200px;border:1px solid #1e2535;margin-bottom:12px;}
 .new-preview-wrap{display:none;margin-top:12px;}
 .new-preview-wrap img{border-radius:8px;border:1px solid #1e2535;}
-.rich-textarea{width:100%;min-height:130px;background:#161b24;border:1px solid #1e2535;border-radius:8px;padding:12px 14px;color:#e8eaf0;font-family:inherit;font-size:14px;resize:vertical;transition:border-color .15s;line-height:1.7;}
+.rich-textarea{width:100%;min-height:130px;background:#161b24;border:1px solid #1e2535;border-radius:8px;padding:12px 14px;color:#e8eaf0;font-family:inherit;font-size:14px;resize:vertical;transition:border-color .15s;line-height:1.7;box-sizing:border-box;}
 .rich-textarea:focus{outline:none;border-color:#0160b2;}
 .repeater-item{background:#0d0f14;border:1px solid #1e2535;border-radius:10px;padding:18px;margin-bottom:14px;position:relative;animation:slideIn .2s ease;}
 @keyframes slideIn{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
@@ -41,7 +41,7 @@
 .sticky-footer{position:sticky;bottom:0;z-index:40;background:#0f1218;border-top:1px solid #1e2535;padding:14px 22px;display:flex;gap:12px;align-items:center;margin:0 -26px -26px;box-shadow:0 -8px 24px rgba(0,0,0,.4);}
 .two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
 .form-label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:#6b7280;margin-bottom:7px;}
-.form-input{width:100%;background:#161b24;border:1px solid #1e2535;border-radius:8px;padding:10px 14px;color:#e8eaf0;font-family:inherit;font-size:14px;transition:border-color .15s;}
+.form-input{width:100%;background:#161b24;border:1px solid #1e2535;border-radius:8px;padding:10px 14px;color:#e8eaf0;font-family:inherit;font-size:14px;transition:border-color .15s;box-sizing:border-box;}
 .form-input:focus{outline:none;border-color:#0160b2;}
 .form-group{margin-bottom:18px;}
 .badge-info{display:inline-block;font-size:10px;color:#4b5563;font-weight:400;margin-left:6px;text-transform:none;letter-spacing:0;}
@@ -50,6 +50,19 @@
 {% endblock %}
 
 {% block content %}
+
+{% if messages %}
+{% for msg in messages %}
+<div style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:10px;margin-bottom:16px;font-size:13px;
+  background:{% if 'error' in msg.tags %}rgba(239,68,68,.1){% else %}rgba(34,197,94,.1){% endif %};
+  border:1px solid {% if 'error' in msg.tags %}rgba(239,68,68,.3){% else %}rgba(34,197,94,.3){% endif %};
+  color:{% if 'error' in msg.tags %}#ef4444{% else %}#22c55e{% endif %};">
+  <i class="fa-solid {% if 'error' in msg.tags %}fa-circle-xmark{% else %}fa-circle-check{% endif %}"></i>
+  {{ msg }}
+</div>
+{% endfor %}
+{% endif %}
+
 <form method="post" enctype="multipart/form-data" id="portfolioItemForm">
 {% csrf_token %}
 
@@ -83,7 +96,6 @@
           </label>
 
           {% if obj.banner_image %}
-          <!-- Show current banner -->
           <img src="{{ obj.banner_image.url }}" class="banner-current" alt="Current banner"/>
           <div class="replace-note"><i class="fa-solid fa-circle-info" style="color:#0160b2;"></i> Upload new image below to replace</div>
           {% endif %}
@@ -223,11 +235,11 @@
               </div>
               <div class="form-group">
                 <label class="form-label">Feature Title</label>
-                <input type="text" name="feature_title[]" class="form-input" value="{{ fi.title }}"/>
+                <input type="text" name="feature_title[]" class="form-input" value="{{ fi.title|default:'' }}"/>
               </div>
               <div class="form-group" style="margin:0;">
                 <label class="form-label">Feature Description</label>
-                <textarea name="feature_desc[]" class="rich-textarea" rows="3">{{ fi.description }}</textarea>
+                <textarea name="feature_desc[]" class="rich-textarea" rows="3">{{ fi.description|default:'' }}</textarea>
               </div>
             </div>
             {% endfor %}
@@ -285,7 +297,7 @@
                 <label class="form-label">Brand Logo</label>
                 {% if bi.logo_url %}
                 <div class="current-img-wrap" style="padding:10px;margin-bottom:8px;">
-                  <img src="{{ bi.logo_url }}" style="max-height:40px;max-width:80px;object-fit:contain;"/>
+                  <img src="{{ bi.logo_url }}" style="max-height:40px;max-width:80px;object-fit:contain;border-radius:4px;"/>
                   <div style="font-size:11px;color:#4b5563;">Current logo</div>
                 </div>
                 {% endif %}
@@ -297,11 +309,11 @@
               </div>
               <div class="form-group">
                 <label class="form-label">Brand Name</label>
-                <input type="text" name="brand_title[]" class="form-input" value="{{ bi.title }}"/>
+                <input type="text" name="brand_title[]" class="form-input" value="{{ bi.title|default:'' }}"/>
               </div>
               <div class="form-group" style="margin:0;">
                 <label class="form-label">Description</label>
-                <textarea name="brand_desc[]" class="rich-textarea" rows="3">{{ bi.description }}</textarea>
+                <textarea name="brand_desc[]" class="rich-textarea" rows="3">{{ bi.description|default:'' }}</textarea>
               </div>
             </div>
             {% endfor %}
@@ -358,15 +370,15 @@
               </div>
               <div class="form-group">
                 <label class="form-label">Testimonial Title</label>
-                <input type="text" name="testimonial_title[]" class="form-input" value="{{ ti.title }}"/>
+                <input type="text" name="testimonial_title[]" class="form-input" value="{{ ti.title|default:'' }}"/>
               </div>
               <div class="form-group">
                 <label class="form-label">Review Text</label>
-                <textarea name="testimonial_desc[]" class="rich-textarea" rows="3">{{ ti.description }}</textarea>
+                <textarea name="testimonial_desc[]" class="rich-textarea" rows="3">{{ ti.description|default:'' }}</textarea>
               </div>
               <div class="form-group" style="margin:0;">
-                <label class="form-label">Client Name</label>
-                <input type="text" name="testimonial_name[]" class="form-input" value="{{ ti.client_name }}"/>
+                <label class="form-label">Client Name &amp; Title</label>
+                <input type="text" name="testimonial_name[]" class="form-input" value="{{ ti.client_name|default:'' }}"/>
               </div>
             </div>
             {% endfor %}
@@ -385,7 +397,7 @@
               <textarea name="testimonial_desc[]" class="rich-textarea" rows="3" placeholder="Customer review text..."></textarea>
             </div>
             <div class="form-group" style="margin:0;">
-              <label class="form-label">Client Name & Title</label>
+              <label class="form-label">Client Name &amp; Title</label>
               <input type="text" name="testimonial_name[]" class="form-input" placeholder="e.g. Akash Menon, Founder Axleo"/>
             </div>
           </div>
@@ -429,6 +441,11 @@
         <input type="hidden" name="category" id="categoryInput"
                value="{{ obj.category_id|default:preselected_cat }}"/>
 
+        {% if not categories %}
+        <div style="padding:16px;text-align:center;font-size:12px;color:#374151;">
+          No categories. <a href="{% url 'dashboard:portfolio_cat_create' %}" style="color:#3b82f6;font-weight:600;text-decoration:none;">Create one first</a>
+        </div>
+        {% else %}
         {% for cat in categories %}
         {% if cat.name == 'Trading' %}
         <div class="cat-btn" data-id="{{ cat.pk }}"
@@ -476,6 +493,7 @@
         </div>
         {% endif %}
         {% endfor %}
+        {% endif %}
       </div>
     </div>
 
@@ -490,7 +508,13 @@
           <input type="text" name="name" class="form-input"
                  value="{{ obj.name|default:'' }}" required
                  style="text-transform:uppercase;font-weight:700;letter-spacing:1px;"
-                 placeholder="e.g. CEMENT"/>
+                 placeholder="e.g. CEMENT"
+                 oninput="this.value=this.value.toUpperCase()"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea name="description" class="rich-textarea" rows="3"
+                    placeholder="Short description of this item...">{{ obj.description|default:'' }}</textarea>
         </div>
         <div class="form-group">
           <label class="form-label">Tags<span class="badge-info">comma-separated</span></label>
@@ -518,14 +542,42 @@
             </label>
           </div>
         </div>
+
+        <!-- Thumbnail image -->
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Thumbnail Image<span class="badge-info">used in portfolio list</span></label>
+          {% if obj.image %}
+          <div class="current-img-wrap" style="margin-bottom:10px;">
+            <img src="{{ obj.image.url }}" class="current-img-thumb" style="width:56px;height:56px;"/>
+            <div>
+              <div style="font-size:12px;color:#9ca3af;font-weight:600;">Current thumbnail</div>
+              <div class="replace-note">Upload below to replace</div>
+            </div>
+          </div>
+          {% endif %}
+          <div class="upload-zone" style="padding:14px;"
+               id="thumbZone"
+               ondragover="handleDrag(event,'thumbZone')"
+               ondragleave="handleDragLeave(event,'thumbZone')"
+               ondrop="handleDrop(event,'thumbZone','thumbNewPreview','thumbInput')">
+            <input type="file" name="image" id="thumbInput" accept="image/*"
+                   onchange="showNewPreview(this,'thumbNewPreview')"/>
+            <div class="upload-zone-icon" style="font-size:20px;"><i class="fa-solid fa-image"></i></div>
+            <div class="upload-zone-text"><span>{% if obj.image %}Replace{% else %}Upload{% endif %} thumbnail</span></div>
+          </div>
+          <div class="new-preview-wrap" id="thumbNewPreview">
+            <img id="thumbNewPreviewImg" style="max-height:80px;border-radius:8px;border:1px solid #1e2535;"/>
+          </div>
+        </div>
+
         {% if obj %}
-        <div style="padding:10px;background:#0d0f14;border-radius:8px;font-size:11px;color:#4b5563;">
+        <div style="padding:10px;background:#0d0f14;border-radius:8px;font-size:11px;color:#4b5563;margin-top:16px;">
           <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
             <span>ID</span><span style="color:#9ca3af;">#{{ obj.pk }}</span>
           </div>
           <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
             <span>Category</span>
-            <span class="badge {% if obj.category.name == 'Trading' %}badge-orange{% elif obj.category.name == 'Distribution' %}badge-blue{% else %}badge-green{% endif %}" style="font-size:10px;">{{ obj.category.name }}</span>
+            <span style="font-size:10px;font-weight:700;color:{% if obj.category.name == 'Trading' %}#f97316{% elif obj.category.name == 'Distribution' %}#3b82f6{% else %}#22c55e{% endif %};">{{ obj.category.name }}</span>
           </div>
           <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
             <span>Created</span><span style="color:#9ca3af;">{{ obj.created_at|date:"d M Y" }}</span>
@@ -586,24 +638,26 @@ function selectCat(id, col, bg) {
       ck.className = 'cat-ck fa-regular fa-circle'; ck.style.color = '#374151';
     }
   });
-  const nameVal = document.querySelector('[name="name"]').value.toUpperCase().trim();
+  const nameVal = (document.querySelector('[name="name"]').value || '').toUpperCase().trim();
   Object.keys(CAT_DATA).forEach(cid => { const el = document.getElementById('preview_'+cid); if(el) el.style.display='none'; });
   if (nameVal && id) { const el = document.getElementById('preview_'+id); if(el){ el.textContent=nameVal; el.style.display='block'; }}
 }
 
-document.querySelector('[name="name"]').addEventListener('input', function() {
-  this.value = this.value.toUpperCase();
-  Object.keys(CAT_DATA).forEach(cid => { const el = document.getElementById('preview_'+cid); if(el) el.style.display='none'; });
-  if (this.value.trim() && selectedCatId) { const el = document.getElementById('preview_'+selectedCatId); if(el){ el.textContent=this.value.trim(); el.style.display='block'; }}
-});
+const nameInput = document.querySelector('[name="name"]');
+if (nameInput) {
+  nameInput.addEventListener('input', function() {
+    this.value = this.value.toUpperCase();
+    Object.keys(CAT_DATA).forEach(cid => { const el = document.getElementById('preview_'+cid); if(el) el.style.display='none'; });
+    if (this.value.trim() && selectedCatId) { const el = document.getElementById('preview_'+selectedCatId); if(el){ el.textContent=this.value.trim(); el.style.display='block'; }}
+  });
+}
 
-// Show new file preview (for replace scenarios)
 function showNewPreview(input, previewId) {
   if (!input.files || !input.files[0]) return;
   const reader = new FileReader();
   reader.onload = e => {
     const wrap = document.getElementById(previewId);
-    wrap.style.display = 'block';
+    if (wrap) { wrap.style.display = 'block'; }
     const img = document.getElementById(previewId + 'Img');
     if (img) img.src = e.target.result;
   };
@@ -635,14 +689,15 @@ function handleDrop(e, zoneId, previewId, inputId) {
   const files = e.dataTransfer.files;
   if (files.length) {
     const input = document.getElementById(inputId);
-    const dt = new DataTransfer(); dt.items.add(files[0]); input.files = dt.files;
-    showNewPreview(input, previewId);
+    if (input) {
+      const dt = new DataTransfer(); dt.items.add(files[0]); input.files = dt.files;
+      showNewPreview(input, previewId);
+    }
   }
 }
 
-// Repeater counts
-let featCount = {{ feature_items|length|default:1 }};
-let brandCount = {{ brand_items|length|default:1 }};
+let featCount        = {{ feature_items|length|default:1 }};
+let brandCount       = {{ brand_items|length|default:1 }};
 let testimonialCount = {{ testimonial_items|length|default:1 }};
 
 function addFeature() {
@@ -708,7 +763,7 @@ function addTestimonial() {
       <textarea name="testimonial_desc[]" class="rich-textarea" rows="3" placeholder="Customer review..."></textarea>
     </div>
     <div class="form-group" style="margin:0;">
-      <label class="form-label">Client Name & Title</label>
+      <label class="form-label">Client Name &amp; Title</label>
       <input type="text" name="testimonial_name[]" class="form-input" placeholder="e.g. Rajan Kumar, Builder"/>
     </div>
   </div>`);
