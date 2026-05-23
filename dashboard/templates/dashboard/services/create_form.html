@@ -1,0 +1,77 @@
+{% extends 'dashboard/base.html' %}
+{% block topbar_actions %}
+<a href="{% url 'dashboard:service_list' %}" class="btn btn-secondary">
+  <i class="fa-solid fa-arrow-left"></i> Back to Services
+</a>
+{% endblock %}
+{% block content %}
+<div style="max-width:680px;">
+  <div class="card">
+    <div class="card-header"><span class="card-title">Add New Service</span></div>
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data" action="{% url 'dashboard:service_create' %}">
+        {% csrf_token %}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+
+          <div class="form-group">
+            <label class="form-label">Service Name *</label>
+            <input type="text" name="name" class="form-control" required
+              placeholder="e.g. Fully Furnished Apartments"/>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select name="category" class="form-control">
+              <option value="">— No Category —</option>
+              {% for cat in categories %}
+              <option value="{{ cat.pk }}" {% if preselected_cat == cat.pk|stringformat:'s' %}selected{% endif %}>
+                {{ cat.name }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group" style="grid-column:1/-1;">
+            <label class="form-label">Description</label>
+            <textarea name="description" class="form-control" rows="3"
+              placeholder="Short description of this service…"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Icon <span class="text-muted">(FontAwesome class)</span></label>
+            <input type="text" name="icon" class="form-control" placeholder="fa-solid fa-building"/>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Service Image</label>
+            <input type="file" name="image" class="form-control" accept="image/*"/>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Display Order</label>
+            <input type="number" name="order" class="form-control" value="0" min="0"/>
+          </div>
+
+          <div class="form-group" style="display:flex;flex-direction:column;gap:10px;padding-top:28px;">
+            <div class="form-check" style="display:flex;gap:8px;align-items:center;">
+              <input type="checkbox" name="is_active" id="svc_active" checked/>
+              <label for="svc_active">Active (visible on website)</label>
+            </div>
+            <div class="form-check" style="display:flex;gap:8px;align-items:center;">
+              <input type="checkbox" name="is_featured" id="svc_featured"/>
+              <label for="svc_featured">Featured</label>
+            </div>
+          </div>
+
+        </div>
+        <div style="display:flex;gap:10px;margin-top:24px;">
+          <button type="submit" class="btn btn-primary">
+            <i class="fa-solid fa-plus"></i> Create Service
+          </button>
+          <a href="{% url 'dashboard:service_list' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

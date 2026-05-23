@@ -88,6 +88,7 @@ urlpatterns = [
         path('', include('blog.urls')),
         path('', include('contact.urls')),
         path('', include('ai_module.urls')),
+        path('', include('services.urls')),
     ])),
 
     # ── API Documentation ──────────────────────────────────────────

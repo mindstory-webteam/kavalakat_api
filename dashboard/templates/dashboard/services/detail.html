@@ -1,0 +1,587 @@
+{% extends 'dashboard/base.html' %}
+{% block content %}
+
+<!-- ── Breadcrumb ── -->
+<div style="display:flex;align-items:center;gap:10px;margin-bottom:22px;flex-wrap:wrap;">
+  <a href="{% url 'dashboard:service_list' %}" class="btn btn-secondary btn-sm">
+    <i class="fa-solid fa-arrow-left"></i> All Services
+  </a>
+  <span style="color:var(--muted);font-size:13px;">/</span>
+  <span style="font-weight:700;font-size:15px;color:var(--text);">{{ service.name }}</span>
+  {% if service.is_active %}<span class="badge badge-green">Active</span>{% else %}<span class="badge badge-gray">Hidden</span>{% endif %}
+  {% if service.is_featured %}<span class="badge" style="background:rgba(234,179,8,.15);color:#eab308;border:1px solid rgba(234,179,8,.3);border-radius:6px;font-size:11px;padding:2px 8px;">Featured</span>{% endif %}
+</div>
+
+<!-- ── Service Card ── -->
+<div class="card mb-6" style="background:linear-gradient(135deg,#0f1420 0%,#111827 100%);border:1px solid var(--border);">
+  <div class="card-body" style="display:flex;gap:20px;align-items:center;padding:20px 24px;">
+    {% if service.image %}
+    <img src="{{ service.image.url }}" style="width:80px;height:80px;object-fit:cover;border-radius:10px;border:1px solid var(--border);flex-shrink:0;"/>
+    {% else %}
+    <div style="width:80px;height:80px;border-radius:10px;border:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      {% if service.icon %}<i class="{{ service.icon }}" style="font-size:28px;color:var(--accent3);"></i>
+      {% else %}<i class="fa-solid fa-concierge-bell" style="font-size:28px;color:var(--muted);"></i>{% endif %}
+    </div>
+    {% endif %}
+    <div style="flex:1;">
+      <div style="font-family:var(--font-head);font-size:20px;font-weight:800;color:var(--text);margin-bottom:4px;">{{ service.name }}</div>
+      {% if service.description %}<div style="color:var(--muted);font-size:13px;line-height:1.5;">{{ service.description|truncatewords:25 }}</div>{% endif %}
+    </div>
+    <a href="{% url 'dashboard:service_edit' service.pk %}" class="btn btn-secondary btn-sm">
+      <i class="fa-solid fa-pen"></i> Edit Service
+    </a>
+  </div>
+</div>
+
+<!-- ── Tab Navigation ── -->
+<div style="display:flex;gap:0;margin-bottom:0;border-bottom:1px solid var(--border);overflow-x:auto;">
+  {% for tab in tabs %}
+  <a href="?tab={{ tab.key }}" style="
+    display:flex;align-items:center;gap:8px;
+    padding:12px 20px;
+    font-size:13px;font-weight:600;
+    color:{% if active_tab == tab.key %}var(--accent3){% else %}var(--muted){% endif %};
+    border-bottom:2px solid {% if active_tab == tab.key %}var(--accent3){% else %}transparent{% endif %};
+    text-decoration:none;white-space:nowrap;
+    background:{% if active_tab == tab.key %}rgba(2,132,240,.06){% else %}transparent{% endif %};
+    transition:all .15s;">
+    <i class="{{ tab.icon }}"></i> {{ tab.label }}
+  </a>
+  {% endfor %}
+</div>
+
+<div style="margin-top:24px;">
+
+<!-- ═══════════════════════════════════════════════════════
+     TAB 1: ABOUT SECTION
+════════════════════════════════════════════════════════ -->
+{% if active_tab == 'about' %}
+<div class="card">
+  <div class="card-header">
+    <span class="card-title"><i class="fa-solid fa-circle-info" style="color:var(--accent3);margin-right:6px;"></i>About Section</span>
+  </div>
+  <div class="card-body">
+    <form method="post" enctype="multipart/form-data" action="{% url 'dashboard:service_about_save' service.pk %}">
+      {% csrf_token %}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+        <div class="form-group">
+          <label class="form-label">Main Title *</label>
+          <input type="text" name="main_title" class="form-control" required value="{{ about.main_title|default:'' }}"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sub Title</label>
+          <input type="text" name="sub_title" class="form-control" value="{{ about.sub_title|default:'' }}"/>
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label class="form-label">Description</label>
+          <textarea name="description" class="form-control" rows="4">{{ about.description|default:'' }}</textarea>
+        </div>
+
+        <!-- Left Image -->
+        <div class="form-group">
+          <label class="form-label">Left Side Image</label>
+          {% if about.left_side_image %}
+          <div style="margin-bottom:10px;position:relative;display:inline-block;">
+            <img src="{{ about.left_side_image.url }}" style="max-height:120px;border-radius:8px;border:1px solid var(--border);display:block;"/>
+            <span style="font-size:11px;color:var(--muted);margin-top:4px;display:block;">Current image</span>
+          </div>
+          {% endif %}
+          <input type="file" name="left_side_image" class="form-control" accept="image/*"/>
+        </div>
+
+        <!-- Gallery Images -->
+        <div class="form-group">
+          <label class="form-label">Gallery Images</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px;">
+            {% for gimg in gallery_images %}
+            <div style="text-align:center;">
+              {% if gimg.url %}
+              <img src="{{ gimg.url }}" style="width:100%;height:60px;object-fit:cover;border-radius:6px;border:1px solid var(--border);"/>
+              {% else %}
+              <div style="width:100%;height:60px;border-radius:6px;border:1px dashed var(--border);display:flex;align-items:center;justify-content:center;">
+                <i class="fa-solid fa-image" style="color:var(--muted);font-size:18px;"></i>
+              </div>
+              {% endif %}
+              <span style="font-size:10px;color:var(--muted);">Gallery {{ forloop.counter }}</span>
+            </div>
+            {% endfor %}
+          </div>
+          <div style="display:grid;grid-template-columns:1fr;gap:8px;">
+            <div><label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block;">Gallery Image 1</label>
+            <input type="file" name="gallery_image_1" class="form-control" accept="image/*"/></div>
+            <div><label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block;">Gallery Image 2</label>
+            <input type="file" name="gallery_image_2" class="form-control" accept="image/*"/></div>
+            <div><label style="font-size:11px;color:var(--muted);margin-bottom:4px;display:block;">Gallery Image 3</label>
+            <input type="file" name="gallery_image_3" class="form-control" accept="image/*"/></div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Button Text</label>
+          <input type="text" name="button_text" class="form-control" value="{{ about.button_text|default:'' }}" placeholder="e.g. Learn More"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Button Link</label>
+          <input type="text" name="button_link" class="form-control" value="{{ about.button_link|default:'' }}" placeholder="/contact or https://…"/>
+        </div>
+      </div>
+      <div style="margin-top:20px;">
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save About Section</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     TAB 2: COUNTERS
+════════════════════════════════════════════════════════ -->
+{% elif active_tab == 'counters' %}
+<div class="card mb-6">
+  <div class="card-header"><span class="card-title"><i class="fa-solid fa-chart-simple" style="color:var(--accent3);margin-right:6px;"></i>Add Counter / Statistic</span></div>
+  <div class="card-body">
+    <form method="post" action="{% url 'dashboard:service_counter_create' service.pk %}">
+      {% csrf_token %}
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Counter Title *</label>
+          <input type="text" name="counter_title" class="form-control" required placeholder="e.g. Years Experience"/>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Number / Value *</label>
+          <input type="text" name="counter_number" class="form-control" required placeholder="e.g. 4+, 100%, 24/7"/>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Icon <span class="text-muted">(FontAwesome)</span></label>
+          <input type="text" name="icon" class="form-control" placeholder="fa-solid fa-trophy"/>
+        </div>
+        <div class="form-group" style="margin:0;grid-column:1/-1;">
+          <label class="form-label">Short Description</label>
+          <input type="text" name="short_description" class="form-control" placeholder="Brief label shown below the number"/>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Order</label>
+          <input type="number" name="order" class="form-control" value="0"/>
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:14px;">
+          <div class="form-check" style="padding-bottom:6px;display:flex;gap:8px;align-items:center;">
+            <input type="checkbox" name="is_active" id="cnt_active" checked/>
+            <label for="cnt_active">Active</label>
+          </div>
+          <button type="submit" class="btn btn-primary" style="height:42px;"><i class="fa-solid fa-plus"></i> Add Counter</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">All Counters</span>
+    <span class="text-muted text-sm">{{ counters|length }} entries</span>
+  </div>
+  <div class="card-body" style="padding:0;">
+    {% if counters %}
+    <table class="table">
+      <thead><tr><th style="width:40px;">#</th><th>Number</th><th>Title</th><th>Description</th><th>Icon</th><th style="width:70px;">Order</th><th style="width:90px;">Status</th><th style="width:100px;">Actions</th></tr></thead>
+      <tbody>
+        {% for item in counters %}
+        <tr>
+          <td class="text-muted">{{ forloop.counter }}</td>
+          <td style="font-size:18px;font-weight:700;color:var(--accent3);">{{ item.counter_number }}</td>
+          <td style="font-weight:600;">{{ item.counter_title }}</td>
+          <td class="text-muted">{{ item.short_description|default:"—" }}</td>
+          <td>{% if item.icon %}<i class="{{ item.icon }}"></i>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+          <td>{{ item.order }}</td>
+          <td>
+            <button class="badge {% if item.is_active %}badge-green{% else %}badge-gray{% endif %} js-toggle"
+              data-model="servicecounter" data-pk="{{ item.pk }}" data-field="is_active" style="border:none;cursor:pointer;">
+              {% if item.is_active %}Active{% else %}Hidden{% endif %}
+            </button>
+          </td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <a href="{% url 'dashboard:service_counter_edit' service.pk item.pk %}" class="btn btn-secondary btn-sm btn-icon"><i class="fa-solid fa-pen"></i></a>
+              <a href="{% url 'dashboard:service_counter_delete' service.pk item.pk %}" class="btn btn-danger btn-sm btn-icon" onclick="return confirm('Delete?')"><i class="fa-solid fa-trash"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><i class="fa-solid fa-chart-bar"></i> No counters yet. Add your first statistic above.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     TAB 3: WHAT WE OFFER
+════════════════════════════════════════════════════════ -->
+{% elif active_tab == 'offers' %}
+<div class="card mb-6">
+  <div class="card-header"><span class="card-title"><i class="fa-solid fa-gift" style="color:var(--accent3);margin-right:6px;"></i>Add Offer Item</span></div>
+  <div class="card-body">
+    <form method="post" action="{% url 'dashboard:service_offer_create' service.pk %}">
+      {% csrf_token %}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Offer Title *</label>
+          <input type="text" name="offer_title" class="form-control" required placeholder="e.g. High-Speed WiFi"/>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Icon <span class="text-muted">(FontAwesome)</span></label>
+          <input type="text" name="offer_icon" class="form-control" placeholder="fa-solid fa-wifi"/>
+        </div>
+        <div class="form-group" style="margin:0;grid-column:1/-1;">
+          <label class="form-label">Short Description</label>
+          <input type="text" name="short_description" class="form-control" placeholder="One-line benefit description"/>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Order</label>
+          <input type="number" name="order" class="form-control" value="0"/>
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:14px;">
+          <div class="form-check" style="padding-bottom:6px;display:flex;gap:8px;align-items:center;">
+            <input type="checkbox" name="is_active" id="off_active" checked/>
+            <label for="off_active">Active</label>
+          </div>
+          <button type="submit" class="btn btn-primary" style="height:42px;"><i class="fa-solid fa-plus"></i> Add Offer</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">All Offer Items</span>
+    <span class="text-muted text-sm">{{ offers|length }} entries</span>
+  </div>
+  <div class="card-body" style="padding:0;">
+    {% if offers %}
+    <table class="table">
+      <thead><tr><th style="width:40px;">#</th><th>Title</th><th>Icon</th><th>Description</th><th style="width:70px;">Order</th><th style="width:90px;">Status</th><th style="width:100px;">Actions</th></tr></thead>
+      <tbody>
+        {% for item in offers %}
+        <tr>
+          <td class="text-muted">{{ forloop.counter }}</td>
+          <td style="font-weight:600;">{{ item.offer_title }}</td>
+          <td>{% if item.offer_icon %}<i class="{{ item.offer_icon }}"></i> <span class="text-muted" style="font-size:11px;">{{ item.offer_icon }}</span>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+          <td class="text-muted" style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ item.short_description|default:"—" }}</td>
+          <td>{{ item.order }}</td>
+          <td>
+            <button class="badge {% if item.is_active %}badge-green{% else %}badge-gray{% endif %} js-toggle"
+              data-model="serviceoffer" data-pk="{{ item.pk }}" data-field="is_active" style="border:none;cursor:pointer;">
+              {% if item.is_active %}Active{% else %}Hidden{% endif %}
+            </button>
+          </td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <a href="{% url 'dashboard:service_offer_edit' service.pk item.pk %}" class="btn btn-secondary btn-sm btn-icon"><i class="fa-solid fa-pen"></i></a>
+              <a href="{% url 'dashboard:service_offer_delete' service.pk item.pk %}" class="btn btn-danger btn-sm btn-icon" onclick="return confirm('Delete?')"><i class="fa-solid fa-trash"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><i class="fa-solid fa-gift"></i> No offers yet. Add your first item above.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     TAB 4: FEATURES / FAQ
+════════════════════════════════════════════════════════ -->
+{% elif active_tab == 'features' %}
+<div class="card mb-6">
+  <div class="card-header"><span class="card-title"><i class="fa-solid fa-sliders" style="color:var(--accent3);margin-right:6px;"></i>Features Section Settings</span></div>
+  <div class="card-body">
+    <form method="post" enctype="multipart/form-data" action="{% url 'dashboard:service_feature_section_save' service.pk %}">
+      {% csrf_token %}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+        <div class="form-group">
+          <label class="form-label">Section Title *</label>
+          <input type="text" name="section_title" class="form-control" required value="{{ feature_section.section_title|default:'' }}"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Left Main Image</label>
+          {% if feature_section.left_main_image %}
+          <div style="margin-bottom:8px;"><img src="{{ feature_section.left_main_image.url }}" style="max-height:80px;border-radius:8px;border:1px solid var(--border);"/></div>
+          {% endif %}
+          <input type="file" name="left_main_image" class="form-control" accept="image/*"/>
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label class="form-label">Main Description</label>
+          <textarea name="main_description" class="form-control" rows="3">{{ feature_section.main_description|default:'' }}</textarea>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" style="margin-top:14px;"><i class="fa-solid fa-floppy-disk"></i> Save Section</button>
+    </form>
+  </div>
+</div>
+
+{% if feature_section %}
+<div class="card mb-6">
+  <div class="card-header"><span class="card-title">Add Feature</span></div>
+  <div class="card-body">
+    <form method="post" action="{% url 'dashboard:service_feature_create' service.pk %}">
+      {% csrf_token %}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Feature Title *</label>
+          <input type="text" name="feature_title" class="form-control" required placeholder="e.g. 24/7 Security"/>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Order</label>
+          <input type="number" name="order" class="form-control" value="0"/>
+        </div>
+        <div class="form-group" style="margin:0;grid-column:1/-1;">
+          <label class="form-label">Feature Description</label>
+          <textarea name="feature_description" class="form-control" rows="2" placeholder="Brief description…"></textarea>
+        </div>
+        <div><button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Feature</button></div>
+      </div>
+    </form>
+  </div>
+</div>
+{% else %}
+<div class="card mb-6"><div class="card-body"><p class="text-muted" style="margin:0;"><i class="fa-solid fa-circle-info" style="margin-right:6px;"></i>Save the Section Settings above first to enable adding features.</p></div></div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">All Features</span>
+    <span class="text-muted text-sm">{{ features|length }} entries</span>
+  </div>
+  <div class="card-body" style="padding:0;">
+    {% if features %}
+    <table class="table">
+      <thead><tr><th style="width:40px;">#</th><th>Title</th><th>Description</th><th style="width:70px;">Order</th><th style="width:100px;">Actions</th></tr></thead>
+      <tbody>
+        {% for item in features %}
+        <tr>
+          <td class="text-muted">{{ forloop.counter }}</td>
+          <td style="font-weight:600;">{{ item.feature_title }}</td>
+          <td class="text-muted" style="max-width:300px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ item.feature_description|default:"—" }}</td>
+          <td>{{ item.order }}</td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <a href="{% url 'dashboard:service_feature_edit' service.pk item.pk %}" class="btn btn-secondary btn-sm btn-icon"><i class="fa-solid fa-pen"></i></a>
+              <a href="{% url 'dashboard:service_feature_delete' service.pk item.pk %}" class="btn btn-danger btn-sm btn-icon" onclick="return confirm('Delete?')"><i class="fa-solid fa-trash"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><i class="fa-solid fa-list-check"></i> No features yet. Add them above.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     TAB 5: HIGHLIGHTS / VIDEO
+════════════════════════════════════════════════════════ -->
+{% elif active_tab == 'highlights' %}
+<div class="card mb-6">
+  <div class="card-header"><span class="card-title"><i class="fa-solid fa-video" style="color:var(--accent3);margin-right:6px;"></i>Add Highlight Video</span></div>
+  <div class="card-body">
+    <form method="post" enctype="multipart/form-data" action="{% url 'dashboard:service_highlight_create' service.pk %}">
+      {% csrf_token %}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Section Title</label>
+          <input type="text" name="section_title" class="form-control" placeholder="e.g. Why Choose Us"/>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Section Sub Title</label>
+          <input type="text" name="section_sub_title" class="form-control" placeholder="Supporting headline…"/>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Highlight Title *</label>
+          <input type="text" name="highlight_title" class="form-control" required placeholder="e.g. Premium Amenities"/>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Display Order</label>
+          <input type="number" name="display_order" class="form-control" value="0"/>
+        </div>
+        <div class="form-group" style="margin:0;grid-column:1/-1;">
+          <label class="form-label">Highlight Description</label>
+          <textarea name="highlight_description" class="form-control" rows="2" placeholder="Brief description…"></textarea>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Video File</label>
+          <input type="file" name="highlight_video" class="form-control" accept="video/*"/>
+        </div>
+        <div style="display:flex;align-items:flex-end;gap:14px;">
+          <div class="form-check" style="padding-bottom:6px;display:flex;gap:8px;align-items:center;">
+            <input type="checkbox" name="is_active" id="hl_active" checked/>
+            <label for="hl_active">Active</label>
+          </div>
+          <button type="submit" class="btn btn-primary" style="height:42px;"><i class="fa-solid fa-plus"></i> Add Highlight</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">All Highlights</span>
+    <span class="text-muted text-sm">{{ highlights|length }} entries</span>
+  </div>
+  <div class="card-body" style="padding:0;">
+    {% if highlights %}
+    <table class="table">
+      <thead><tr><th style="width:40px;">#</th><th>Title</th><th>Description</th><th>Video</th><th style="width:70px;">Order</th><th style="width:90px;">Status</th><th style="width:100px;">Actions</th></tr></thead>
+      <tbody>
+        {% for item in highlights %}
+        <tr>
+          <td class="text-muted">{{ forloop.counter }}</td>
+          <td style="font-weight:600;">{{ item.highlight_title }}</td>
+          <td class="text-muted" style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ item.highlight_description|default:"—" }}</td>
+          <td>{% if item.highlight_video %}<span class="badge badge-green">✓ Uploaded</span>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+          <td>{{ item.display_order }}</td>
+          <td>
+            <button class="badge {% if item.is_active %}badge-green{% else %}badge-gray{% endif %} js-toggle"
+              data-model="servicehighlight" data-pk="{{ item.pk }}" data-field="is_active" style="border:none;cursor:pointer;">
+              {% if item.is_active %}Active{% else %}Hidden{% endif %}
+            </button>
+          </td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <a href="{% url 'dashboard:service_highlight_edit' service.pk item.pk %}" class="btn btn-secondary btn-sm btn-icon"><i class="fa-solid fa-pen"></i></a>
+              <a href="{% url 'dashboard:service_highlight_delete' service.pk item.pk %}" class="btn btn-danger btn-sm btn-icon" onclick="return confirm('Delete?')"><i class="fa-solid fa-trash"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><i class="fa-solid fa-video"></i> No highlights yet. Add your first one above.</div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════
+     TAB 6: LOCATION
+════════════════════════════════════════════════════════ -->
+{% elif active_tab == 'location' %}
+<div class="card mb-6">
+  <div class="card-header"><span class="card-title"><i class="fa-solid fa-map-pin" style="color:var(--accent3);margin-right:6px;"></i>Location Section Settings</span></div>
+  <div class="card-body">
+    <form method="post" enctype="multipart/form-data" action="{% url 'dashboard:service_location_save' service.pk %}">
+      {% csrf_token %}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+        <div class="form-group">
+          <label class="form-label">Main Title *</label>
+          <input type="text" name="location_main_title" class="form-control" required value="{{ location.location_main_title|default:'' }}"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sub Title</label>
+          <input type="text" name="location_main_sub_title" class="form-control" value="{{ location.location_main_sub_title|default:'' }}"/>
+        </div>
+        <div class="form-group" style="grid-column:1/-1;">
+          <label class="form-label">Main Description</label>
+          <textarea name="location_main_description" class="form-control" rows="3">{{ location.location_main_description|default:'' }}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Left Main Image</label>
+          {% if location.left_main_image %}
+          <div style="margin-bottom:8px;"><img src="{{ location.left_main_image.url }}" style="max-height:80px;border-radius:8px;border:1px solid var(--border);"/></div>
+          {% endif %}
+          <input type="file" name="left_main_image" class="form-control" accept="image/*"/>
+        </div>
+      </div>
+      <button type="submit" class="btn btn-primary" style="margin-top:14px;"><i class="fa-solid fa-floppy-disk"></i> Save Location Section</button>
+    </form>
+  </div>
+</div>
+
+{% if location %}
+<div class="card mb-6">
+  <div class="card-header"><span class="card-title">Add Nearby Place</span></div>
+  <div class="card-body">
+    <form method="post" action="{% url 'dashboard:service_nearby_create' service.pk %}">
+      {% csrf_token %}
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;">
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Place Name *</label>
+          <input type="text" name="nearby_place_name" class="form-control" required placeholder="e.g. Railway Station"/>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Distance</label>
+          <input type="text" name="distance" class="form-control" placeholder="e.g. 2 km, 500 m"/>
+        </div>
+        <div class="form-group" style="margin:0;">
+          <label class="form-label">Order</label>
+          <input type="number" name="order" class="form-control" value="0"/>
+        </div>
+        <div class="form-group" style="margin:0;grid-column:1/-1;">
+          <label class="form-label">Google Maps Link</label>
+          <input type="url" name="map_link" class="form-control" placeholder="https://maps.google.com/…"/>
+        </div>
+        <div><button type="submit" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Place</button></div>
+      </div>
+    </form>
+  </div>
+</div>
+{% else %}
+<div class="card mb-6"><div class="card-body"><p class="text-muted" style="margin:0;"><i class="fa-solid fa-circle-info" style="margin-right:6px;"></i>Save the Location Section above first to enable adding nearby places.</p></div></div>
+{% endif %}
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Nearby Places</span>
+    <span class="text-muted text-sm">{{ nearby_places|length }} entries</span>
+  </div>
+  <div class="card-body" style="padding:0;">
+    {% if nearby_places %}
+    <table class="table">
+      <thead><tr><th style="width:40px;">#</th><th>Place Name</th><th>Distance</th><th>Map Link</th><th style="width:70px;">Order</th><th style="width:100px;">Actions</th></tr></thead>
+      <tbody>
+        {% for place in nearby_places %}
+        <tr>
+          <td class="text-muted">{{ forloop.counter }}</td>
+          <td style="font-weight:600;">{{ place.nearby_place_name }}</td>
+          <td class="text-muted">{{ place.distance|default:"—" }}</td>
+          <td>{% if place.map_link %}<a href="{{ place.map_link }}" target="_blank" class="text-muted" style="font-size:12px;">View Map ↗</a>{% else %}<span class="text-muted">—</span>{% endif %}</td>
+          <td>{{ place.order }}</td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <a href="{% url 'dashboard:service_nearby_edit' service.pk place.pk %}" class="btn btn-secondary btn-sm btn-icon"><i class="fa-solid fa-pen"></i></a>
+              <a href="{% url 'dashboard:service_nearby_delete' service.pk place.pk %}" class="btn btn-danger btn-sm btn-icon" onclick="return confirm('Delete?')"><i class="fa-solid fa-trash"></i></a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state"><i class="fa-solid fa-map-pin"></i> No nearby places yet. Add them above.</div>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
+
+</div><!-- end tab content -->
+
+<script>
+document.querySelectorAll('.js-toggle').forEach(btn => {
+  btn.addEventListener('click', function () {
+    fetch("{% url 'dashboard:ajax_toggle' %}", {
+      method: 'POST',
+      headers: {'X-CSRFToken': '{{ csrf_token }}', 'Content-Type': 'application/x-www-form-urlencoded'},
+      body: `model=${this.dataset.model}&pk=${this.dataset.pk}&field=${this.dataset.field}`,
+    })
+    .then(r => r.json()).then(d => {
+      if (d.ok) {
+        this.textContent = d.value ? 'Active' : 'Hidden';
+        this.className = `badge ${d.value ? 'badge-green' : 'badge-gray'} js-toggle`;
+      }
+    });
+  });
+});
+</script>
+{% endblock %}

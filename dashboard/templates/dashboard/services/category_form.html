@@ -1,0 +1,138 @@
+{% extends 'dashboard/base.html' %}
+{% block topbar_actions %}
+<a href="{% url 'dashboard:service_categories' %}" class="btn btn-secondary">
+  <i class="fa-solid fa-arrow-left"></i> Back to Categories
+</a>
+{% endblock %}
+{% block content %}
+<div style="max-width:600px;">
+  <div class="card">
+    <div class="card-header"><span class="card-title">{{ page_title }}</span></div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label class="form-label">Category Name *</label>
+          <input type="text" name="name" class="form-control" required
+            value="{{ obj.name|default:'' }}" placeholder="e.g. Residential, Commercial, Hospitality"/>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea name="description" class="form-control" rows="3"
+            placeholder="Brief description of this category…">{{ obj.description|default:'' }}</textarea>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+          <div class="form-group">
+            <label class="form-label">Icon <span style="color:var(--muted);font-size:11px;">(FontAwesome class)</span></label>
+            <input type="text" name="icon" class="form-control"
+              value="{{ obj.icon|default:'' }}" placeholder="fa-solid fa-building"/>
+            {% if obj.icon %}
+            <div style="margin-top:8px;display:flex;align-items:center;gap:8px;">
+              <i class="{{ obj.icon }}" style="font-size:20px;color:{{ obj.color|default:'#0284f0' }};"></i>
+              <span style="font-size:12px;color:var(--muted);">Current icon preview</span>
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Badge Color</label>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <input type="color" id="colorPicker" value="{{ obj.color|default:'#0284f0' }}"
+                style="width:48px;height:42px;border:none;background:none;cursor:pointer;border-radius:8px;padding:2px;"/>
+              <input type="text" name="color" id="colorText" class="form-control"
+                value="{{ obj.color|default:'#0284f0' }}"
+                style="font-family:monospace;font-size:13px;" placeholder="#0284f0"/>
+            </div>
+            <div style="margin-top:10px;">
+              <div style="font-size:11px;color:var(--muted);margin-bottom:6px;">Presets:</div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                {% for preset in color_presets %}
+                <button type="button" onclick="setColor('{{ preset.color }}')"
+                  style="width:24px;height:24px;border-radius:50%;background:{{ preset.color }};border:2px solid transparent;cursor:pointer;transition:border-color .15s;"
+                  title="{{ preset.name }}" class="color-preset"></button>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:120px 1fr;gap:18px;align-items:end;">
+          <div class="form-group">
+            <label class="form-label">Display Order</label>
+            <input type="number" name="order" class="form-control"
+              value="{{ obj.order|default:0 }}" min="0"/>
+          </div>
+          <div class="form-group">
+            <div class="form-check" style="display:flex;gap:8px;align-items:center;margin-top:24px;">
+              <input type="checkbox" name="is_active" id="is_active"
+                {% if obj.is_active or not obj %}checked{% endif %}/>
+              <label for="is_active">Active (visible on website)</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Live Preview -->
+        <div style="margin:18px 0;padding:14px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px;">Preview</div>
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div style="width:10px;height:10px;border-radius:50%;background:var(--preview-color, #0284f0);" id="previewDot"></div>
+            <span id="previewName" style="font-weight:700;font-size:13px;color:var(--text);">{{ obj.name|default:"Category Name" }}</span>
+            <span id="previewBadge" class="badge" style="border-radius:6px;font-size:11px;padding:3px 10px;
+              background:rgba(2,132,240,.15);color:#0284f0;border:1px solid rgba(2,132,240,.3);">
+              0 services
+            </span>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;">
+          <button type="submit" class="btn btn-primary">
+            <i class="fa-solid fa-floppy-disk"></i>
+            {% if obj %}Update Category{% else %}Create Category{% endif %}
+          </button>
+          {% if obj %}
+          <a href="{% url 'dashboard:service_cat_delete' obj.pk %}" class="btn btn-danger">
+            <i class="fa-solid fa-trash"></i> Delete
+          </a>
+          {% endif %}
+          <a href="{% url 'dashboard:service_categories' %}" class="btn btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+const picker   = document.getElementById('colorPicker');
+const textIn   = document.getElementById('colorText');
+const dot      = document.getElementById('previewDot');
+const badge    = document.getElementById('previewBadge');
+
+function setColor(hex) {
+  picker.value = hex;
+  textIn.value = hex;
+  updatePreview(hex);
+  document.querySelectorAll('.color-preset').forEach(b => {
+    b.style.borderColor = b.getAttribute('onclick').includes(hex) ? '#fff' : 'transparent';
+  });
+}
+
+function updatePreview(hex) {
+  dot.style.background   = hex;
+  badge.style.background = hex + '22';
+  badge.style.color      = hex;
+  badge.style.borderColor= hex + '55';
+}
+
+picker.addEventListener('input', () => { textIn.value = picker.value; updatePreview(picker.value); });
+textIn.addEventListener('input', () => {
+  if (/^#[0-9a-fA-F]{6}$/.test(textIn.value)) { picker.value = textIn.value; updatePreview(textIn.value); }
+});
+document.querySelector('input[name=name]').addEventListener('input', function(){
+  document.getElementById('previewName').textContent = this.value || 'Category Name';
+});
+updatePreview('{{ obj.color|default:"#0284f0" }}');
+</script>
+{% endblock %}

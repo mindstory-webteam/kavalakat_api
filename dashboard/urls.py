@@ -82,4 +82,54 @@ urlpatterns = [
 
     # AJAX
     path('ajax/toggle/', views.ajax_toggle, name='ajax_toggle'),
+
+    # ── SERVICES — paste this block into dashboard/urls.py urlpatterns ─────────────
+
+    # Services list & CRUD
+    path('services/',                 views.service_list,   name='service_list'),
+    path('services/create/',          views.service_create, name='service_create'),
+    path('services/<int:pk>/edit/',   views.service_edit,   name='service_edit'),
+    path('services/<int:pk>/delete/', views.service_delete, name='service_delete'),
+
+    # Service detail (tabbed: about / counters / offers / features / highlights / location)
+    path('services/<int:pk>/detail/', views.service_detail, name='service_detail'),
+
+    # About
+    path('services/<int:pk>/about/save/', views.service_about_save, name='service_about_save'),
+
+    # Counters
+    path('services/<int:pk>/counters/create/',               views.service_counter_create, name='service_counter_create'),
+    path('services/<int:pk>/counters/<int:item_pk>/edit/',   views.service_counter_edit,   name='service_counter_edit'),
+    path('services/<int:pk>/counters/<int:item_pk>/delete/', views.service_counter_delete, name='service_counter_delete'),
+
+    # Offers
+    path('services/<int:pk>/offers/create/',               views.service_offer_create, name='service_offer_create'),
+    path('services/<int:pk>/offers/<int:item_pk>/edit/',   views.service_offer_edit,   name='service_offer_edit'),
+    path('services/<int:pk>/offers/<int:item_pk>/delete/', views.service_offer_delete, name='service_offer_delete'),
+
+    # Features
+    path('services/<int:pk>/features/section/save/',            views.service_feature_section_save, name='service_feature_section_save'),
+    path('services/<int:pk>/features/create/',                  views.service_feature_create,       name='service_feature_create'),
+    path('services/<int:pk>/features/<int:item_pk>/edit/',      views.service_feature_edit,         name='service_feature_edit'),
+    path('services/<int:pk>/features/<int:item_pk>/delete/',    views.service_feature_delete,       name='service_feature_delete'),
+
+    # Highlights
+    path('services/<int:pk>/highlights/create/',               views.service_highlight_create, name='service_highlight_create'),
+    path('services/<int:pk>/highlights/<int:item_pk>/edit/',   views.service_highlight_edit,   name='service_highlight_edit'),
+    path('services/<int:pk>/highlights/<int:item_pk>/delete/', views.service_highlight_delete, name='service_highlight_delete'),
+
+    # Location
+    path('services/<int:pk>/location/save/',                            views.service_location_save, name='service_location_save'),
+    path('services/<int:pk>/location/nearby/create/',                   views.service_nearby_create, name='service_nearby_create'),
+    path('services/<int:pk>/location/nearby/<int:item_pk>/edit/',       views.service_nearby_edit,   name='service_nearby_edit'),
+    path('services/<int:pk>/location/nearby/<int:item_pk>/delete/',     views.service_nearby_delete, name='service_nearby_delete'),
+
+    # Categories
+    path('services/categories/',                 views.service_categories, name='service_categories'),
+    path('services/categories/create/',          views.service_cat_create, name='service_cat_create'),
+    path('services/categories/<int:pk>/edit/',   views.service_cat_edit,   name='service_cat_edit'),
+    path('services/categories/<int:pk>/delete/', views.service_cat_delete, name='service_cat_delete'),
+
+# ── END SERVICES ─────────────────────────────────────────────────────────────
+
 ]

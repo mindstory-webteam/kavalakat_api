@@ -1,0 +1,36 @@
+{% extends 'dashboard/base.html' %}
+{% block content %}
+<div style="margin-bottom:24px;">
+  <a href="{% url 'dashboard:service_detail' service.pk %}?tab=counters" class="btn btn-secondary btn-sm">← Back to {{ service.name }}</a>
+</div>
+<div class="card">
+  <div class="card-header"><span class="card-title">{{ page_title }}</span></div>
+  <div class="card-body">
+    <form method="post">
+      {% csrf_token %}
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+        <div class="form-group"><label class="form-label">Counter Title *</label>
+          <input type="text" name="counter_title" class="form-control" required value="{{ obj.counter_title|default:'' }}"/></div>
+        <div class="form-group"><label class="form-label">Number / Value *</label>
+          <input type="text" name="counter_number" class="form-control" required value="{{ obj.counter_number|default:'' }}" placeholder="e.g. 4+, 100%, 24/7"/></div>
+        <div class="form-group"><label class="form-label">Short Description</label>
+          <input type="text" name="short_description" class="form-control" value="{{ obj.short_description|default:'' }}"/></div>
+        <div class="form-group"><label class="form-label">Icon <span class="text-muted">(FontAwesome class)</span></label>
+          <input type="text" name="icon" class="form-control" value="{{ obj.icon|default:'' }}" placeholder="fa-solid fa-trophy"/></div>
+        <div class="form-group"><label class="form-label">Order</label>
+          <input type="number" name="order" class="form-control" value="{{ obj.order|default:0 }}"/></div>
+        <div class="form-group" style="padding-top:28px;">
+          <div class="form-check" style="display:flex;gap:8px;align-items:center;">
+            <input type="checkbox" name="is_active" id="cnt_active" {% if obj.is_active %}checked{% endif %}/>
+            <label for="cnt_active">Active</label>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:20px;">
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+        <a href="{% url 'dashboard:service_detail' service.pk %}?tab=counters" class="btn btn-secondary">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

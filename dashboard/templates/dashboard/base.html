@@ -416,12 +416,26 @@ select.form-control option { background: var(--surface2); color: var(--text); }
   color: var(--muted);
 }
 .empty-state i { font-size: 44px; margin-bottom: 14px; display: block; opacity: .25; }
+
+/* ── TABLE class alias ── */
+.table { width: 100%; border-collapse: collapse; }
+.table th {
+  text-align: left; font-size: 10px; text-transform: uppercase;
+  letter-spacing: 1px; color: var(--muted); padding: 10px 16px;
+  border-bottom: 1px solid var(--border); font-weight: 600;
+}
+.table td {
+  padding: 12px 16px; border-bottom: 1px solid var(--border);
+  font-size: 13px; vertical-align: middle;
+}
+.table tr:last-child td { border-bottom: none; }
+.table tr:hover td { background: var(--surface2); }
 </style>
 {% block extra_head %}{% endblock %}
 </head>
 <body>
 
-<!-- ═══════════════════════════════════════════ SIDEBAR -->
+<!-- ════════════════════════════════ SIDEBAR -->
 <aside class="sidebar">
 
   <!-- Logo -->
@@ -445,44 +459,46 @@ select.form-control option { background: var(--surface2); color: var(--text); }
   <!-- Navigation -->
   <nav class="sidebar-nav">
 
+    {% with url_name=request.resolver_match.url_name %}
+
     <!-- OVERVIEW -->
     <div class="nav-section">Overview</div>
     <a href="{% url 'dashboard:home' %}"
-       class="nav-item {% if request.resolver_match.url_name == 'home' %}active{% endif %}">
+       class="nav-item {% if url_name == 'home' %}active{% endif %}">
       <i class="fa-solid fa-chart-pie"></i> Dashboard
     </a>
 
     <!-- CONTENT -->
     <div class="nav-section">Content</div>
     <a href="{% url 'dashboard:pages_list' %}"
-       class="nav-item {% if 'pages' in request.resolver_match.url_name %}active{% endif %}">
+       class="nav-item {% if url_name in 'pages_list pages_create pages_edit pages_delete' %}active{% endif %}">
       <i class="fa-solid fa-file-lines"></i> Pages
     </a>
     <a href="{% url 'dashboard:blog_list' %}"
-       class="nav-item {% if 'blog' in request.resolver_match.url_name and 'categor' not in request.resolver_match.url_name %}active{% endif %}">
+       class="nav-item {% if url_name in 'blog_list blog_create blog_edit blog_delete' %}active{% endif %}">
       <i class="fa-solid fa-newspaper"></i> Blog Posts
     </a>
     <a href="{% url 'dashboard:blog_categories' %}"
-       class="nav-item {% if 'blog_categor' in request.resolver_match.url_name %}active{% endif %}">
+       class="nav-item {% if url_name in 'blog_categories blog_category_create blog_category_edit blog_category_delete' %}active{% endif %}">
       <i class="fa-solid fa-tags"></i> Blog Categories
     </a>
 
     <!-- BUSINESS -->
     <div class="nav-section">Business</div>
     <a href="{% url 'dashboard:portfolio_list' %}"
-       class="nav-item {% if 'portfolio' in request.resolver_match.url_name and 'cat' not in request.resolver_match.url_name %}active{% endif %}">
+       class="nav-item {% if url_name in 'portfolio_list portfolio_item_create portfolio_item_edit portfolio_item_delete' %}active{% endif %}">
       <i class="fa-solid fa-briefcase"></i> Portfolio Items
     </a>
     <a href="{% url 'dashboard:portfolio_categories' %}"
-       class="nav-item {% if 'portfolio_cat' in request.resolver_match.url_name %}active{% endif %}">
+       class="nav-item {% if url_name in 'portfolio_categories portfolio_cat_create portfolio_cat_edit portfolio_cat_delete' %}active{% endif %}">
       <i class="fa-solid fa-layer-group"></i> Portfolio Categories
     </a>
     <a href="{% url 'dashboard:careers_list' %}"
-       class="nav-item {% if 'career' in request.resolver_match.url_name %}active{% endif %}">
+       class="nav-item {% if url_name in 'careers_list careers_create careers_edit careers_delete' %}active{% endif %}">
       <i class="fa-solid fa-user-tie"></i> Careers
     </a>
     <a href="{% url 'dashboard:enquiry_list' %}"
-       class="nav-item {% if 'enquiry' in request.resolver_match.url_name %}active{% endif %}">
+       class="nav-item {% if url_name in 'enquiry_list enquiry_detail enquiry_delete' %}active{% endif %}">
       <i class="fa-solid fa-envelope"></i> Enquiries
       {% if new_enquiry_count %}<span class="nav-badge">{{ new_enquiry_count }}</span>{% endif %}
     </a>
@@ -491,39 +507,46 @@ select.form-control option { background: var(--surface2); color: var(--text); }
     <div class="nav-section">Settings</div>
 
     <a href="{% url 'dashboard:about_info' %}"
-       class="nav-item {% if request.resolver_match.url_name == 'about_info' %}active{% endif %}">
+       class="nav-item {% if url_name == 'about_info' %}active{% endif %}">
       <i class="fa-solid fa-building"></i> About
     </a>
-
     <a href="{% url 'dashboard:strengths_list' %}"
-       class="nav-sub-item {% if 'strength' in request.resolver_match.url_name %}active{% endif %}">
+       class="nav-sub-item {% if url_name in 'strengths_list strength_create strength_edit strength_delete' %}active{% endif %}">
       <i class="fa-solid fa-list-check"></i> Strengths
     </a>
-
     <a href="{% url 'dashboard:milestones_list' %}"
-       class="nav-sub-item {% if 'milestone' in request.resolver_match.url_name %}active{% endif %}">
+       class="nav-sub-item {% if url_name in 'milestones_list milestone_create milestone_edit milestone_delete' %}active{% endif %}">
       <i class="fa-solid fa-clock-rotate-left"></i> Milestones
     </a>
-
     <a href="{% url 'dashboard:projects_list' %}"
-       class="nav-sub-item {% if 'project' in request.resolver_match.url_name %}active{% endif %}">
+       class="nav-sub-item {% if url_name in 'projects_list project_create project_edit project_delete' %}active{% endif %}">
       <i class="fa-solid fa-hard-hat"></i> Projects
     </a>
-
     <a href="{% url 'dashboard:team_list' %}"
-       class="nav-sub-item {% if 'team' in request.resolver_match.url_name %}active{% endif %}">
+       class="nav-sub-item {% if url_name in 'team_list team_create team_edit team_delete' %}active{% endif %}">
       <i class="fa-solid fa-users"></i> Team
     </a>
-
     <a href="{% url 'dashboard:gallery_list' %}"
-       class="nav-sub-item {% if 'gallery' in request.resolver_match.url_name %}active{% endif %}">
+       class="nav-sub-item {% if url_name in 'gallery_list gallery_upload gallery_delete' %}active{% endif %}">
       <i class="fa-solid fa-images"></i> Gallery
     </a>
-
     <a href="{% url 'dashboard:contact_info' %}"
-       class="nav-item {% if 'contact' in request.resolver_match.url_name %}active{% endif %}">
-      <i class="fa-solid fa-phone"></i> Contact Info
+       class="nav-item {% if url_name == 'contact_info' %}active{% endif %}">
+      <i class="fa-solid fa-address-book"></i> Contact Info
     </a>
+
+    <!-- SERVICES -->
+    <div class="nav-section">Services</div>
+    <a href="{% url 'dashboard:service_list' %}"
+       class="nav-item {% if url_name in 'service_list service_create service_edit service_delete service_detail service_about_save service_counter_create service_counter_edit service_counter_delete service_offer_create service_offer_edit service_offer_delete service_feature_section_save service_feature_create service_feature_edit service_feature_delete service_highlight_create service_highlight_edit service_highlight_delete service_location_save service_nearby_create service_nearby_edit service_nearby_delete' %}active{% endif %}">
+      <i class="fa-solid fa-concierge-bell"></i> Services
+    </a>
+    <a href="{% url 'dashboard:service_categories' %}"
+       class="nav-item {% if url_name in 'service_categories service_cat_create service_cat_edit service_cat_delete' %}active{% endif %}">
+      <i class="fa-solid fa-layer-group"></i> Categories
+    </a>
+
+    {% endwith %}
 
   </nav>
 
@@ -543,7 +566,7 @@ select.form-control option { background: var(--surface2); color: var(--text); }
 
 </aside>
 
-<!-- ═══════════════════════════════════════════ MAIN -->
+<!-- ════════════════════════════════ MAIN -->
 <div class="main">
   <header class="topbar">
     <div class="topbar-title">{{ page_title }}</div>

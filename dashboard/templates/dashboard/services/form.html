@@ -1,0 +1,92 @@
+{% extends 'dashboard/base.html' %}
+{% block topbar_actions %}
+<a href="{% url 'dashboard:service_list' %}" class="btn btn-secondary">
+  <i class="fa-solid fa-arrow-left"></i> Back to Services
+</a>
+{% endblock %}
+{% block content %}
+<div style="max-width:680px;">
+  <div class="card">
+    <div class="card-header"><span class="card-title">{{ page_title }}</span></div>
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+
+          <div class="form-group">
+            <label class="form-label">Service Name *</label>
+            <input type="text" name="name" class="form-control" required value="{{ obj.name|default:'' }}"/>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <select name="category" class="form-control">
+              <option value="">— No Category —</option>
+              {% for cat in categories %}
+              <option value="{{ cat.pk }}" {% if obj.category_id == cat.pk %}selected{% endif %}>
+                {{ cat.name }}
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group" style="grid-column:1/-1;">
+            <label class="form-label">Description</label>
+            <textarea name="description" class="form-control" rows="3">{{ obj.description|default:'' }}</textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Icon <span class="text-muted">(FontAwesome class)</span></label>
+            <input type="text" name="icon" class="form-control" value="{{ obj.icon|default:'' }}"
+              placeholder="fa-solid fa-building"/>
+            {% if obj.icon %}
+            <div style="margin-top:8px;"><i class="{{ obj.icon }}" style="font-size:20px;color:var(--accent3);"></i>
+            <span style="font-size:11px;color:var(--muted);margin-left:6px;">Current icon</span></div>
+            {% endif %}
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Service Image</label>
+            {% if obj.image %}
+            <div style="margin-bottom:8px;">
+              <img src="{{ obj.image.url }}"
+                style="max-height:100px;border-radius:8px;border:1px solid var(--border);"/>
+            </div>
+            {% endif %}
+            <input type="file" name="image" class="form-control" accept="image/*"/>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Display Order</label>
+            <input type="number" name="order" class="form-control" value="{{ obj.order|default:0 }}" min="0"/>
+          </div>
+
+          <div class="form-group" style="display:flex;flex-direction:column;gap:10px;padding-top:28px;">
+            <div class="form-check" style="display:flex;gap:8px;align-items:center;">
+              <input type="checkbox" name="is_active" id="svc_active" {% if obj.is_active %}checked{% endif %}/>
+              <label for="svc_active">Active (visible on website)</label>
+            </div>
+            <div class="form-check" style="display:flex;gap:8px;align-items:center;">
+              <input type="checkbox" name="is_featured" id="svc_featured" {% if obj.is_featured %}checked{% endif %}/>
+              <label for="svc_featured">Featured</label>
+            </div>
+          </div>
+
+        </div>
+        <div style="display:flex;gap:10px;margin-top:24px;">
+          <button type="submit" class="btn btn-primary">
+            <i class="fa-solid fa-floppy-disk"></i> Save Changes
+          </button>
+          <a href="{% url 'dashboard:service_detail' obj.pk %}" class="btn btn-secondary">
+            <i class="fa-solid fa-layer-group"></i> Manage Sections
+          </a>
+          <a href="{% url 'dashboard:service_delete' obj.pk %}" class="btn btn-danger"
+            onclick="return confirm('Delete {{ obj.name }} and all its content?')">
+            <i class="fa-solid fa-trash"></i> Delete
+          </a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
