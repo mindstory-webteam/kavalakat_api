@@ -37,19 +37,25 @@ def dashboard_logout(request):
 @staff_required
 def dashboard_home(request):
     from blog.models import Post
-    from contact.models import Enquiry, Career
+    from contact.models import Enquiry, Career, JobApplication
     from portfolio.models import Item
     from pages.models import Page
 
+    try:
+        new_applications = JobApplication.objects.filter(status='new').count()
+    except Exception:
+        new_applications = 0
+
     stats = {
-        'total_posts':     Post.objects.count(),
-        'published_posts': Post.objects.filter(status='published').count(),
-        'draft_posts':     Post.objects.filter(status='draft').count(),
-        'total_enquiries': Enquiry.objects.count(),
-        'new_enquiries':   Enquiry.objects.filter(status='new').count(),
-        'active_careers':  Career.objects.filter(is_active=True).count(),
-        'portfolio_items': Item.objects.count(),
-        'active_pages':    Page.objects.filter(is_active=True).count(),
+        'total_posts':        Post.objects.count(),
+        'published_posts':    Post.objects.filter(status='published').count(),
+        'draft_posts':        Post.objects.filter(status='draft').count(),
+        'total_enquiries':    Enquiry.objects.count(),
+        'new_enquiries':      Enquiry.objects.filter(status='new').count(),
+        'active_careers':     Career.objects.filter(is_active=True).count(),
+        'new_applications':   new_applications,
+        'portfolio_items':    Item.objects.count(),
+        'active_pages':       Page.objects.filter(is_active=True).count(),
     }
     recent_enquiries = Enquiry.objects.order_by('-created_at')[:5]
     recent_posts     = Post.objects.select_related('category').order_by('-created_at')[:5]
@@ -72,6 +78,7 @@ def dashboard_home(request):
         'stats': stats, 'recent_enquiries': recent_enquiries, 'recent_posts': recent_posts,
         'chart_labels': json.dumps(chart_labels), 'chart_data': json.dumps(chart_data),
         'post_status': json.dumps(post_status), 'page_title': 'Dashboard',
+        'new_application_count': new_applications,
     })
 
 
@@ -323,9 +330,7 @@ def enquiry_delete(request, pk):
 
 
 # ── PORTFOLIO ─────────────────────────────────────────────────────────────────
-
 def _parse_json_list(raw):
-    """Safely parse a JSON string into a list; returns [] on failure."""
     try:
         data = json.loads(raw) if raw else []
         return data if isinstance(data, list) else []
@@ -334,39 +339,26 @@ def _parse_json_list(raw):
 
 
 def _build_portfolio_context(request, obj, categories):
-    """
-    Build the extra context that form.html needs:
-      feature_items, brand_items, testimonial_items
-    These are parsed from the model's JSON fields so they display on the edit page.
-    """
     feature_items     = []
     brand_items       = []
     testimonial_items = []
-
     if obj:
         feature_items     = _parse_json_list(obj.features_json)
         brand_items       = _parse_json_list(obj.brands_json)
         testimonial_items = _parse_json_list(obj.testimonials_json)
-
     return {
-        'categories':       categories,
-        'obj':              obj,
-        'feature_items':    feature_items,
-        'brand_items':      brand_items,
+        'categories':        categories,
+        'obj':               obj,
+        'feature_items':     feature_items,
+        'brand_items':       brand_items,
         'testimonial_items': testimonial_items,
     }
 
 
 def _collect_post_json(request):
-    """
-    Collect the repeater field arrays from POST and build the three JSON strings
-    (features_json, brands_json, testimonials_json) ready to store.
-    Brand logos are uploaded files; we store only the relative /media/... path.
-    """
     import os
     from django.conf import settings
 
-    # ── Features ─────────────────────────────────────────────────────────────
     feat_titles = request.POST.getlist('feature_title[]')
     feat_descs  = request.POST.getlist('feature_desc[]')
     features = []
@@ -374,7 +366,6 @@ def _collect_post_json(request):
         if t.strip() or d.strip():
             features.append({'title': t.strip(), 'description': d.strip()})
 
-    # ── Brands ───────────────────────────────────────────────────────────────
     brand_titles = request.POST.getlist('brand_title[]')
     brand_descs  = request.POST.getlist('brand_desc[]')
     brand_logos  = request.FILES.getlist('brand_logo[]')
@@ -391,24 +382,15 @@ def _collect_post_json(request):
                 for chunk in logo_file.chunks():
                     dest.write(chunk)
             logo_url = f'/media/portfolio/brands/{fname}'
-        brands.append({
-            'title':       t.strip(),
-            'description': d.strip(),
-            'logo_url':    logo_url,
-        })
+        brands.append({'title': t.strip(), 'description': d.strip(), 'logo_url': logo_url})
 
-    # ── Testimonials ──────────────────────────────────────────────────────────
     test_titles = request.POST.getlist('testimonial_title[]')
     test_descs  = request.POST.getlist('testimonial_desc[]')
     test_names  = request.POST.getlist('testimonial_name[]')
     testimonials = []
     for t, d, n in zip(test_titles, test_descs, test_names):
         if t.strip() or d.strip():
-            testimonials.append({
-                'title':       t.strip(),
-                'description': d.strip(),
-                'client_name': n.strip(),
-            })
+            testimonials.append({'title': t.strip(), 'description': d.strip(), 'client_name': n.strip()})
 
     return (
         json.dumps(features,     ensure_ascii=False),
@@ -463,7 +445,6 @@ def portfolio_create(request):
         .prefetch_related('items')
         .order_by('order', 'name')
     )
-
     if request.method == 'POST':
         name   = request.POST.get('name', '').strip().upper()
         cat_id = request.POST.get('category', '').strip()
@@ -475,7 +456,6 @@ def portfolio_create(request):
             try:
                 features_json, brands_json, testimonials_json = _collect_post_json(request)
                 Item.objects.create(
-                    # ── Basic ───────────────────────────────────────────────
                     name=name,
                     description=request.POST.get('description', ''),
                     tags=request.POST.get('tags', ''),
@@ -484,28 +464,22 @@ def portfolio_create(request):
                     is_active=request.POST.get('is_active') == 'on',
                     order=int(request.POST.get('order', 0) or 0),
                     image=request.FILES.get('image'),
-                    # ── Section 1: Hero Banner ───────────────────────────────
                     hero_title=request.POST.get('hero_title', ''),
                     banner_image=request.FILES.get('banner_image'),
-                    # ── Section 2: About ─────────────────────────────────────
                     about_title=request.POST.get('about_title', ''),
                     about_description=request.POST.get('about_description', ''),
                     about_image=request.FILES.get('about_image'),
-                    # ── Section 3: Features ──────────────────────────────────
                     features_title=request.POST.get('features_title', ''),
                     features_image=request.FILES.get('features_image'),
                     features_json=features_json,
-                    # ── Section 4: Brands ────────────────────────────────────
                     brands_heading=request.POST.get('brands_heading', ''),
                     brands_json=brands_json,
-                    # ── Section 5: Testimonials ──────────────────────────────
                     testimonials_json=testimonials_json,
                 )
                 messages.success(request, f'Item "{name}" created successfully.')
                 return redirect('dashboard:portfolio_list')
             except Exception as e:
                 messages.error(request, f'Error creating item: {e}')
-
     ctx = _build_portfolio_context(request, None, categories)
     ctx.update({'page_title': 'Add Portfolio Item', 'preselected_cat': preselected_cat})
     return render(request, 'dashboard/portfolio/form.html', ctx)
@@ -524,7 +498,6 @@ def portfolio_edit(request, pk):
         .prefetch_related('items')
         .order_by('order', 'name')
     )
-
     if request.method == 'POST':
         name   = request.POST.get('name', obj.name).strip().upper()
         cat_id = request.POST.get('category', '').strip()
@@ -534,51 +507,30 @@ def portfolio_edit(request, pk):
             messages.error(request, 'Please select a category.')
         else:
             features_json, brands_json, testimonials_json = _collect_post_json(request)
-
-            # ── Basic ────────────────────────────────────────────────────────
-            obj.name        = name
-            obj.description = request.POST.get('description', '')
-            obj.tags        = request.POST.get('tags', '')
-            obj.category_id = int(cat_id)
-            obj.is_featured = request.POST.get('is_featured') == 'on'
-            obj.is_active   = request.POST.get('is_active') == 'on'
-            obj.order       = int(request.POST.get('order', 0) or 0)
-            if request.FILES.get('image'):
-                obj.image = request.FILES['image']
-
-            # ── Section 1: Hero Banner ────────────────────────────────────────
-            obj.hero_title = request.POST.get('hero_title', '')
-            if request.FILES.get('banner_image'):
-                obj.banner_image = request.FILES['banner_image']
-
-            # ── Section 2: About ──────────────────────────────────────────────
+            obj.name              = name
+            obj.description       = request.POST.get('description', '')
+            obj.tags              = request.POST.get('tags', '')
+            obj.category_id       = int(cat_id)
+            obj.is_featured       = request.POST.get('is_featured') == 'on'
+            obj.is_active         = request.POST.get('is_active') == 'on'
+            obj.order             = int(request.POST.get('order', 0) or 0)
+            if request.FILES.get('image'):          obj.image          = request.FILES['image']
+            obj.hero_title        = request.POST.get('hero_title', '')
+            if request.FILES.get('banner_image'):   obj.banner_image   = request.FILES['banner_image']
             obj.about_title       = request.POST.get('about_title', '')
             obj.about_description = request.POST.get('about_description', '')
-            if request.FILES.get('about_image'):
-                obj.about_image = request.FILES['about_image']
-
-            # ── Section 3: Features ───────────────────────────────────────────
-            obj.features_title = request.POST.get('features_title', '')
-            if request.FILES.get('features_image'):
-                obj.features_image = request.FILES['features_image']
-            obj.features_json = features_json
-
-            # ── Section 4: Brands ─────────────────────────────────────────────
-            obj.brands_heading = request.POST.get('brands_heading', '')
-            obj.brands_json    = brands_json
-
-            # ── Section 5: Testimonials ───────────────────────────────────────
+            if request.FILES.get('about_image'):    obj.about_image    = request.FILES['about_image']
+            obj.features_title    = request.POST.get('features_title', '')
+            if request.FILES.get('features_image'): obj.features_image = request.FILES['features_image']
+            obj.features_json     = features_json
+            obj.brands_heading    = request.POST.get('brands_heading', '')
+            obj.brands_json       = brands_json
             obj.testimonials_json = testimonials_json
-
             obj.save()
             messages.success(request, f'Item "{obj.name}" updated.')
             return redirect('dashboard:portfolio_list')
-
     ctx = _build_portfolio_context(request, obj, categories)
-    ctx.update({
-        'page_title':      f'Edit — {obj.name}',
-        'preselected_cat': str(obj.category_id),
-    })
+    ctx.update({'page_title': f'Edit — {obj.name}', 'preselected_cat': str(obj.category_id)})
     return render(request, 'dashboard/portfolio/form.html', ctx)
 
 
@@ -587,13 +539,10 @@ def portfolio_delete(request, pk):
     from portfolio.models import Item
     obj = get_object_or_404(Item, pk=pk)
     if request.method == 'POST':
-        name = obj.name
-        obj.delete()
+        name = obj.name; obj.delete()
         messages.success(request, f'Item "{name}" deleted.')
         return redirect('dashboard:portfolio_list')
-    return render(request, 'dashboard/confirm_delete.html', {
-        'obj': obj, 'page_title': f'Delete — {obj.name}'
-    })
+    return render(request, 'dashboard/confirm_delete.html', {'obj': obj, 'page_title': f'Delete — {obj.name}'})
 
 
 # ── PORTFOLIO CATEGORIES ──────────────────────────────────────────────────────
@@ -601,9 +550,7 @@ def portfolio_delete(request, pk):
 def portfolio_categories(request):
     from portfolio.models import Category
     cats = Category.objects.annotate(item_count=Count('items')).order_by('order', 'name')
-    return render(request, 'dashboard/portfolio/categories.html', {
-        'categories': cats, 'page_title': 'Portfolio Categories'
-    })
+    return render(request, 'dashboard/portfolio/categories.html', {'categories': cats, 'page_title': 'Portfolio Categories'})
 
 
 @staff_required
@@ -618,21 +565,15 @@ def portfolio_cat_create(request):
             cat, created = Category.objects.get_or_create(
                 name=name,
                 defaults={
-                    'slug':        slugify(name),
-                    'description': request.POST.get('description', ''),
-                    'icon':        request.POST.get('icon', ''),
-                    'order':       int(request.POST.get('order', 0) or 0),
-                    'is_active':   request.POST.get('is_active') == 'on',
+                    'slug': slugify(name), 'description': request.POST.get('description', ''),
+                    'icon': request.POST.get('icon', ''), 'order': int(request.POST.get('order', 0) or 0),
+                    'is_active': request.POST.get('is_active') == 'on',
                 }
             )
-            if created:
-                messages.success(request, f'Category "{name}" created successfully.')
-            else:
-                messages.warning(request, f'Category "{name}" already exists.')
+            if created: messages.success(request, f'Category "{name}" created successfully.')
+            else:       messages.warning(request, f'Category "{name}" already exists.')
             return redirect('dashboard:portfolio_categories')
-    return render(request, 'dashboard/portfolio/category_form.html', {
-        'page_title': 'Add Category', 'obj': None
-    })
+    return render(request, 'dashboard/portfolio/category_form.html', {'page_title': 'Add Category', 'obj': None})
 
 
 @staff_required
@@ -640,17 +581,15 @@ def portfolio_cat_edit(request, pk):
     from portfolio.models import Category
     obj = get_object_or_404(Category, pk=pk)
     if request.method == 'POST':
-        obj.name        = request.POST.get('name', obj.name).strip()
+        obj.name = request.POST.get('name', obj.name).strip()
         obj.description = request.POST.get('description', '')
-        obj.icon        = request.POST.get('icon', '')
-        obj.order       = int(request.POST.get('order', 0) or 0)
-        obj.is_active   = request.POST.get('is_active') == 'on'
+        obj.icon  = request.POST.get('icon', '')
+        obj.order = int(request.POST.get('order', 0) or 0)
+        obj.is_active = request.POST.get('is_active') == 'on'
         obj.save()
         messages.success(request, f'Category "{obj.name}" updated.')
         return redirect('dashboard:portfolio_categories')
-    return render(request, 'dashboard/portfolio/category_form.html', {
-        'page_title': f'Edit — {obj.name}', 'obj': obj
-    })
+    return render(request, 'dashboard/portfolio/category_form.html', {'page_title': f'Edit — {obj.name}', 'obj': obj})
 
 
 @staff_required
@@ -658,20 +597,20 @@ def portfolio_cat_delete(request, pk):
     from portfolio.models import Category
     obj = get_object_or_404(Category, pk=pk)
     if request.method == 'POST':
-        name = obj.name
-        obj.delete()
+        name = obj.name; obj.delete()
         messages.success(request, f'Category "{name}" deleted.')
         return redirect('dashboard:portfolio_categories')
-    return render(request, 'dashboard/confirm_delete.html', {
-        'obj': obj, 'page_title': f'Delete Category — {obj.name}'
-    })
+    return render(request, 'dashboard/confirm_delete.html', {'obj': obj, 'page_title': f'Delete Category — {obj.name}'})
 
 
 # ── CAREERS ───────────────────────────────────────────────────────────────────
 @staff_required
 def careers_list(request):
     from contact.models import Career
-    careers = Paginator(Career.objects.all().order_by('-created_at'), 10).get_page(request.GET.get('page'))
+    careers = Paginator(
+        Career.objects.annotate(application_count=Count('applications')).order_by('-created_at'),
+        10
+    ).get_page(request.GET.get('page'))
     return render(request, 'dashboard/careers/list.html', {'careers': careers, 'page_title': 'Careers'})
 
 
@@ -728,6 +667,81 @@ def careers_delete(request, pk):
     return render(request, 'dashboard/confirm_delete.html', {'obj': obj, 'page_title': 'Delete Career'})
 
 
+# ── JOB APPLICATIONS ─────────────────────────────────────────────────────────
+@staff_required
+def applications_list(request):
+    from contact.models import JobApplication, Career
+
+    status    = request.GET.get('status', '')
+    search    = request.GET.get('search', '')
+    career_id = request.GET.get('career', '')
+
+    qs = JobApplication.objects.select_related('career').all()
+    if status:    qs = qs.filter(status=status)
+    if career_id: qs = qs.filter(career_id=career_id)
+    if search:
+        qs = qs.filter(Q(name__icontains=search) | Q(email__icontains=search) | Q(phone__icontains=search))
+    qs = qs.order_by('-created_at')
+
+    applications = Paginator(qs, 15).get_page(request.GET.get('page'))
+
+    base_qs = JobApplication.objects.all()
+    if career_id: base_qs = base_qs.filter(career_id=career_id)
+    counts = {r['status']: r['count'] for r in base_qs.values('status').annotate(count=Count('id'))}
+    counts['total'] = base_qs.count()
+    for s in ['new', 'reviewed', 'shortlisted', 'rejected', 'hired']:
+        counts.setdefault(s, 0)
+
+    career_filter = None
+    if career_id:
+        try: career_filter = Career.objects.get(pk=career_id)
+        except Career.DoesNotExist: pass
+
+    return render(request, 'dashboard/careers/applications_list.html', {
+        'applications':  applications,
+        'status':        status,
+        'search':        search,
+        'career_id':     career_id,
+        'career_filter': career_filter,
+        'counts':        counts,
+        'page_title':    'Applications',
+    })
+
+
+@staff_required
+def application_detail(request, pk):
+    from contact.models import JobApplication
+    obj = get_object_or_404(JobApplication, pk=pk)
+
+    if obj.status == 'new':
+        obj.status = 'reviewed'
+        obj.save(update_fields=['status'])
+
+    if request.method == 'POST':
+        obj.status     = request.POST.get('status', obj.status)
+        obj.admin_note = request.POST.get('admin_note', '')
+        obj.save()
+        messages.success(request, 'Application updated.')
+        return redirect('dashboard:application_detail', pk=pk)
+
+    return render(request, 'dashboard/careers/application_detail.html', {
+        'obj': obj, 'page_title': f'Application — {obj.name}',
+    })
+
+
+@staff_required
+def application_delete(request, pk):
+    from contact.models import JobApplication
+    obj = get_object_or_404(JobApplication, pk=pk)
+    if request.method == 'POST':
+        obj.delete()
+        messages.success(request, 'Application deleted.')
+        return redirect('dashboard:applications_list')
+    return render(request, 'dashboard/confirm_delete.html', {
+        'obj': obj, 'page_title': f'Delete Application — {obj.name}',
+    })
+
+
 # ── CONTACT INFO ──────────────────────────────────────────────────────────────
 @staff_required
 def contact_info(request):
@@ -776,8 +790,7 @@ def about_info(request):
 def strengths_list(request):
     from about.models import Strength
     return render(request, 'dashboard/about/strengths.html', {
-        'items': Strength.objects.all().order_by('order'),
-        'page_title': 'Strengths',
+        'items': Strength.objects.all().order_by('order'), 'page_title': 'Strengths',
     })
 
 
@@ -795,9 +808,7 @@ def strength_create(request):
         )
         messages.success(request, 'Strength added.')
         return redirect('dashboard:strengths_list')
-    return render(request, 'dashboard/about/strength_form.html', {
-        'page_title': 'Add Strength', 'obj': None,
-    })
+    return render(request, 'dashboard/about/strength_form.html', {'page_title': 'Add Strength', 'obj': None})
 
 
 @staff_required
@@ -814,9 +825,7 @@ def strength_edit(request, pk):
         obj.save()
         messages.success(request, 'Strength updated.')
         return redirect('dashboard:strengths_list')
-    return render(request, 'dashboard/about/strength_form.html', {
-        'page_title': 'Edit Strength', 'obj': obj,
-    })
+    return render(request, 'dashboard/about/strength_form.html', {'page_title': 'Edit Strength', 'obj': obj})
 
 
 @staff_required
@@ -827,9 +836,7 @@ def strength_delete(request, pk):
         obj.delete()
         messages.success(request, 'Strength deleted.')
         return redirect('dashboard:strengths_list')
-    return render(request, 'dashboard/confirm_delete.html', {
-        'obj': obj, 'page_title': 'Delete Strength',
-    })
+    return render(request, 'dashboard/confirm_delete.html', {'obj': obj, 'page_title': 'Delete Strength'})
 
 
 # ── MILESTONES ────────────────────────────────────────────────────────────────
@@ -837,8 +844,7 @@ def strength_delete(request, pk):
 def milestones_list(request):
     from about.models import Milestone
     return render(request, 'dashboard/about/milestones.html', {
-        'items': Milestone.objects.all().order_by('year', 'order'),
-        'page_title': 'Milestones',
+        'items': Milestone.objects.all().order_by('year', 'order'), 'page_title': 'Milestones',
     })
 
 
@@ -856,9 +862,7 @@ def milestone_create(request):
         )
         messages.success(request, 'Milestone added.')
         return redirect('dashboard:milestones_list')
-    return render(request, 'dashboard/about/milestone_form.html', {
-        'page_title': 'Add Milestone', 'obj': None,
-    })
+    return render(request, 'dashboard/about/milestone_form.html', {'page_title': 'Add Milestone', 'obj': None})
 
 
 @staff_required
@@ -875,9 +879,7 @@ def milestone_edit(request, pk):
         obj.save()
         messages.success(request, 'Milestone updated.')
         return redirect('dashboard:milestones_list')
-    return render(request, 'dashboard/about/milestone_form.html', {
-        'page_title': 'Edit Milestone', 'obj': obj,
-    })
+    return render(request, 'dashboard/about/milestone_form.html', {'page_title': 'Edit Milestone', 'obj': obj})
 
 
 @staff_required
@@ -888,9 +890,7 @@ def milestone_delete(request, pk):
         obj.delete()
         messages.success(request, 'Milestone deleted.')
         return redirect('dashboard:milestones_list')
-    return render(request, 'dashboard/confirm_delete.html', {
-        'obj': obj, 'page_title': 'Delete Milestone',
-    })
+    return render(request, 'dashboard/confirm_delete.html', {'obj': obj, 'page_title': 'Delete Milestone'})
 
 
 # ── PROJECTS ──────────────────────────────────────────────────────────────────
@@ -902,17 +902,14 @@ def projects_list(request):
     qs = Project.objects.all()
     if search:
         qs = qs.filter(
-            Q(title__icontains=search)       | Q(client__icontains=search) |
-            Q(tag__icontains=search)          | Q(description__icontains=search)
+            Q(title__icontains=search) | Q(client__icontains=search) |
+            Q(tag__icontains=search)   | Q(description__icontains=search)
         )
     if featured == '1': qs = qs.filter(is_featured=True)
     if featured == '0': qs = qs.filter(is_featured=False)
     projects = Paginator(qs.order_by('-created_at'), 12).get_page(request.GET.get('page'))
     return render(request, 'dashboard/about/projects.html', {
-        'items':      projects,
-        'search':     search,
-        'featured':   featured,
-        'page_title': 'Projects',
+        'items': projects, 'search': search, 'featured': featured, 'page_title': 'Projects',
     })
 
 
@@ -921,23 +918,21 @@ def project_create(request):
     from about.models import Project
     if request.method == 'POST':
         Project.objects.create(
-            title           = request.POST.get('title', '').strip(),
-            description     = request.POST.get('description', ''),
-            client          = request.POST.get('client', '').strip(),
-            client_location = request.POST.get('client_location', '').strip(),
-            location        = request.POST.get('location', '').strip(),
-            year            = request.POST.get('year') or None,
-            tag             = request.POST.get('tag', '').strip(),
-            contact_url     = request.POST.get('contact_url', '').strip(),
-            is_featured     = request.POST.get('is_featured') == 'on',
-            image           = request.FILES.get('image'),
-            client_logo     = request.FILES.get('client_logo'),
+            title=request.POST.get('title', '').strip(),
+            description=request.POST.get('description', ''),
+            client=request.POST.get('client', '').strip(),
+            client_location=request.POST.get('client_location', '').strip(),
+            location=request.POST.get('location', '').strip(),
+            year=request.POST.get('year') or None,
+            tag=request.POST.get('tag', '').strip(),
+            contact_url=request.POST.get('contact_url', '').strip(),
+            is_featured=request.POST.get('is_featured') == 'on',
+            image=request.FILES.get('image'),
+            client_logo=request.FILES.get('client_logo'),
         )
         messages.success(request, 'Project created.')
         return redirect('dashboard:projects_list')
-    return render(request, 'dashboard/about/project_form.html', {
-        'page_title': 'Add Project', 'obj': None,
-    })
+    return render(request, 'dashboard/about/project_form.html', {'page_title': 'Add Project', 'obj': None})
 
 
 @staff_required
@@ -959,9 +954,7 @@ def project_edit(request, pk):
         obj.save()
         messages.success(request, 'Project updated.')
         return redirect('dashboard:projects_list')
-    return render(request, 'dashboard/about/project_form.html', {
-        'page_title': f'Edit — {obj.title}', 'obj': obj,
-    })
+    return render(request, 'dashboard/about/project_form.html', {'page_title': f'Edit — {obj.title}', 'obj': obj})
 
 
 @staff_required
@@ -972,9 +965,7 @@ def project_delete(request, pk):
         obj.delete()
         messages.success(request, 'Project deleted.')
         return redirect('dashboard:projects_list')
-    return render(request, 'dashboard/confirm_delete.html', {
-        'obj': obj, 'page_title': f'Delete — {obj.title}',
-    })
+    return render(request, 'dashboard/confirm_delete.html', {'obj': obj, 'page_title': f'Delete — {obj.title}'})
 
 
 # ── GALLERY ───────────────────────────────────────────────────────────────────
@@ -982,8 +973,7 @@ def project_delete(request, pk):
 def gallery_list(request):
     from about.models import Gallery
     return render(request, 'dashboard/about/gallery.html', {
-        'items': Gallery.objects.all().order_by('order'),
-        'page_title': 'Gallery',
+        'items': Gallery.objects.all().order_by('order'), 'page_title': 'Gallery',
     })
 
 
@@ -1010,9 +1000,7 @@ def gallery_delete(request, pk):
         obj.delete()
         messages.success(request, 'Image deleted.')
         return redirect('dashboard:gallery_list')
-    return render(request, 'dashboard/confirm_delete.html', {
-        'obj': obj, 'page_title': 'Delete Image',
-    })
+    return render(request, 'dashboard/confirm_delete.html', {'obj': obj, 'page_title': 'Delete Image'})
 
 
 # ── TEAM ──────────────────────────────────────────────────────────────────────
@@ -1020,8 +1008,7 @@ def gallery_delete(request, pk):
 def team_list(request):
     from about.models import TeamMember
     return render(request, 'dashboard/about/team.html', {
-        'items': TeamMember.objects.all().order_by('order'),
-        'page_title': 'Team Members',
+        'items': TeamMember.objects.all().order_by('order'), 'page_title': 'Team Members',
     })
 
 
@@ -1040,9 +1027,7 @@ def team_create(request):
         )
         messages.success(request, 'Team member added.')
         return redirect('dashboard:team_list')
-    return render(request, 'dashboard/about/team_form.html', {
-        'page_title': 'Add Team Member', 'obj': None,
-    })
+    return render(request, 'dashboard/about/team_form.html', {'page_title': 'Add Team Member', 'obj': None})
 
 
 @staff_required
@@ -1060,9 +1045,7 @@ def team_edit(request, pk):
         obj.save()
         messages.success(request, 'Team member updated.')
         return redirect('dashboard:team_list')
-    return render(request, 'dashboard/about/team_form.html', {
-        'page_title': 'Edit Team Member', 'obj': obj,
-    })
+    return render(request, 'dashboard/about/team_form.html', {'page_title': 'Edit Team Member', 'obj': obj})
 
 
 @staff_required
@@ -1073,9 +1056,7 @@ def team_delete(request, pk):
         obj.delete()
         messages.success(request, 'Team member deleted.')
         return redirect('dashboard:team_list')
-    return render(request, 'dashboard/confirm_delete.html', {
-        'obj': obj, 'page_title': 'Delete Team Member',
-    })
+    return render(request, 'dashboard/confirm_delete.html', {'obj': obj, 'page_title': 'Delete Team Member'})
 
 
 # ── AJAX ──────────────────────────────────────────────────────────────────────
@@ -1111,8 +1092,6 @@ def ajax_toggle(request):
     obj.save(update_fields=[field])
     return JsonResponse({'ok': True, 'value': not current})
 
-# ── SERVICES ──────────────────────────────────────────────────────────────────
-
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # SERVICES  ─  Dashboard Views
@@ -1132,7 +1111,6 @@ COLOR_PRESETS = [
 ]
 
 
-# ── Helpers ────────────────────────────────────────────────────────────────────
 def _svc_redirect(pk, tab):
     return redirect(reverse('dashboard:service_detail', args=[pk]) + f'?tab={tab}')
 
@@ -1159,7 +1137,6 @@ def _service_detail_ctx(service, active_tab):
     highlights      = list(ServiceHighlight.objects.filter(service=service).order_by('display_order'))
     location        = ServiceLocation.objects.filter(service=service).first()
     nearby_places   = list(ServiceNearbyPlace.objects.filter(location=location).order_by('order')) if location else []
-
     gallery_images = []
     if about:
         for f in ['gallery_image_1', 'gallery_image_2', 'gallery_image_3']:
@@ -1167,32 +1144,19 @@ def _service_detail_ctx(service, active_tab):
             gallery_images.append({'url': field.url if field else None})
     else:
         gallery_images = [{'url': None}, {'url': None}, {'url': None}]
-
     return {
-        'service':         service,
-        'tabs':            tabs,
-        'active_tab':      active_tab,
-        'about':           about,
-        'gallery_images':  gallery_images,
-        'counters':        counters,
-        'offers':          offers,
-        'feature_section': feature_section,
-        'features':        features,
-        'highlights':      highlights,
-        'location':        location,
-        'nearby_places':   nearby_places,
-        'page_title':      service.name,
+        'service': service, 'tabs': tabs, 'active_tab': active_tab,
+        'about': about, 'gallery_images': gallery_images,
+        'counters': counters, 'offers': offers,
+        'feature_section': feature_section, 'features': features,
+        'highlights': highlights, 'location': location,
+        'nearby_places': nearby_places, 'page_title': service.name,
     }
 
 
-# ── Service List ───────────────────────────────────────────────────────────────
 @staff_required
 def service_list(request):
-    from django.db import connection
-    categories    = []
-    uncategorised = []
-    total_count   = 0
-
+    categories = []; uncategorised = []; total_count = 0
     try:
         from services.models import Service, ServiceCategory
         from django.db.models import Count, Prefetch
@@ -1205,23 +1169,19 @@ def service_list(request):
         uncategorised = list(Service.objects.filter(category__isnull=True).order_by('order', 'name'))
         total_count   = Service.objects.count()
         return render(request, 'dashboard/services/list.html', {
-            'categories':    categories,
-            'uncategorised': uncategorised,
-            'total_count':   total_count,
-            'error_msg':     None,
-            'page_title':    'Services',
+            'categories': categories, 'uncategorised': uncategorised,
+            'total_count': total_count, 'error_msg': None, 'page_title': 'Services',
         })
     except Exception as e:
         import logging
         logging.getLogger(__name__).error(f'service_list error: {e}')
         return render(request, 'dashboard/services/list.html', {
             'categories': [], 'uncategorised': [], 'total_count': 0,
-            'error_msg': f'DB error: {e}. Run: py manage.py migrate services --fake  then restart.',
+            'error_msg': f'DB error: {e}. Run: py manage.py migrate services --fake then restart.',
             'page_title': 'Services',
         })
 
 
-# ── Service CRUD ───────────────────────────────────────────────────────────────
 @staff_required
 def service_create(request):
     from services.models import Service
@@ -1233,8 +1193,7 @@ def service_create(request):
             messages.error(request, 'Service name is required.')
         else:
             base = slugify(name); slug = base; n = 1
-            while Service.objects.filter(slug=slug).exists():
-                slug = f'{base}-{n}'; n += 1
+            while Service.objects.filter(slug=slug).exists(): slug = f'{base}-{n}'; n += 1
             cat_id = request.POST.get('category') or None
             Service.objects.create(
                 name=name, slug=slug,
@@ -1271,8 +1230,7 @@ def service_edit(request, pk):
         obj.is_featured = request.POST.get('is_featured') == 'on'
         cat_id          = request.POST.get('category') or None
         obj.category_id = int(cat_id) if cat_id else None
-        if request.FILES.get('image'):
-            obj.image = request.FILES['image']
+        if request.FILES.get('image'): obj.image = request.FILES['image']
         obj.save()
         messages.success(request, 'Service updated.')
         return redirect('dashboard:service_list')
@@ -1297,7 +1255,6 @@ def service_delete(request, pk):
     return render(request, 'dashboard/confirm_delete.html', {'obj': obj, 'page_title': f'Delete — {obj.name}'})
 
 
-# ── Service Detail (tabbed page) ───────────────────────────────────────────────
 @staff_required
 def service_detail(request, pk):
     from services.models import Service
@@ -1308,16 +1265,14 @@ def service_detail(request, pk):
     return render(request, 'dashboard/services/detail.html', _service_detail_ctx(service, active_tab))
 
 
-# ── About ──────────────────────────────────────────────────────────────────────
 @staff_required
 def service_about_save(request, pk):
     from services.models import Service, ServiceAbout
     service = get_object_or_404(Service, pk=pk)
     if request.method == 'POST':
-        obj       = ServiceAbout.objects.filter(service=service).first()
-        text_data = {f: request.POST.get(f, '') for f in
-                     ['main_title', 'sub_title', 'description', 'button_text', 'button_link']}
-        img_fields = ['left_side_image', 'gallery_image_1', 'gallery_image_2', 'gallery_image_3']
+        obj        = ServiceAbout.objects.filter(service=service).first()
+        text_data  = {f: request.POST.get(f, '') for f in ['main_title','sub_title','description','button_text','button_link']}
+        img_fields = ['left_side_image','gallery_image_1','gallery_image_2','gallery_image_3']
         if obj:
             for k, v in text_data.items(): setattr(obj, k, v)
             for f in img_fields:
@@ -1330,7 +1285,6 @@ def service_about_save(request, pk):
     return _svc_redirect(pk, 'about')
 
 
-# ── Counters ───────────────────────────────────────────────────────────────────
 @staff_required
 def service_counter_create(request, pk):
     from services.models import Service, ServiceCounter
@@ -1338,12 +1292,12 @@ def service_counter_create(request, pk):
     if request.method == 'POST':
         ServiceCounter.objects.create(
             service=service,
-            counter_title=request.POST.get('counter_title', '').strip(),
-            counter_number=request.POST.get('counter_number', '').strip(),
-            short_description=request.POST.get('short_description', ''),
-            icon=request.POST.get('icon', ''),
-            order=int(request.POST.get('order', 0) or 0),
-            is_active=request.POST.get('is_active') == 'on',
+            counter_title=request.POST.get('counter_title','').strip(),
+            counter_number=request.POST.get('counter_number','').strip(),
+            short_description=request.POST.get('short_description',''),
+            icon=request.POST.get('icon',''),
+            order=int(request.POST.get('order',0) or 0),
+            is_active=request.POST.get('is_active')=='on',
         )
         messages.success(request, 'Counter added.')
     return _svc_redirect(pk, 'counters')
@@ -1355,17 +1309,15 @@ def service_counter_edit(request, pk, item_pk):
     service = get_object_or_404(Service, pk=pk)
     obj     = get_object_or_404(ServiceCounter, pk=item_pk, service=service)
     if request.method == 'POST':
-        obj.counter_title     = request.POST.get('counter_title', obj.counter_title).strip()
-        obj.counter_number    = request.POST.get('counter_number', obj.counter_number).strip()
-        obj.short_description = request.POST.get('short_description', '')
-        obj.icon              = request.POST.get('icon', '')
-        obj.order             = int(request.POST.get('order', 0) or 0)
-        obj.is_active         = request.POST.get('is_active') == 'on'
-        obj.save()
-        messages.success(request, 'Counter updated.')
+        obj.counter_title=request.POST.get('counter_title',obj.counter_title).strip()
+        obj.counter_number=request.POST.get('counter_number',obj.counter_number).strip()
+        obj.short_description=request.POST.get('short_description','')
+        obj.icon=request.POST.get('icon','')
+        obj.order=int(request.POST.get('order',0) or 0)
+        obj.is_active=request.POST.get('is_active')=='on'
+        obj.save(); messages.success(request, 'Counter updated.')
         return _svc_redirect(pk, 'counters')
-    return render(request, 'dashboard/services/counter_form.html',
-                  {'obj': obj, 'service': service, 'page_title': 'Edit Counter'})
+    return render(request, 'dashboard/services/counter_form.html', {'obj':obj,'service':service,'page_title':'Edit Counter'})
 
 
 @staff_required
@@ -1374,13 +1326,11 @@ def service_counter_delete(request, pk, item_pk):
     service = get_object_or_404(Service, pk=pk)
     obj     = get_object_or_404(ServiceCounter, pk=item_pk, service=service)
     if request.method == 'POST':
-        obj.delete()
-        messages.success(request, 'Counter deleted.')
+        obj.delete(); messages.success(request, 'Counter deleted.')
         return _svc_redirect(pk, 'counters')
-    return render(request, 'dashboard/confirm_delete.html', {'obj': obj, 'page_title': 'Delete Counter'})
+    return render(request, 'dashboard/confirm_delete.html', {'obj':obj,'page_title':'Delete Counter'})
 
 
-# ── Offers ─────────────────────────────────────────────────────────────────────
 @staff_required
 def service_offer_create(request, pk):
     from services.models import Service, ServiceOffer
@@ -1388,11 +1338,11 @@ def service_offer_create(request, pk):
     if request.method == 'POST':
         ServiceOffer.objects.create(
             service=service,
-            offer_title=request.POST.get('offer_title', '').strip(),
-            offer_icon=request.POST.get('offer_icon', ''),
-            short_description=request.POST.get('short_description', ''),
-            order=int(request.POST.get('order', 0) or 0),
-            is_active=request.POST.get('is_active') == 'on',
+            offer_title=request.POST.get('offer_title','').strip(),
+            offer_icon=request.POST.get('offer_icon',''),
+            short_description=request.POST.get('short_description',''),
+            order=int(request.POST.get('order',0) or 0),
+            is_active=request.POST.get('is_active')=='on',
         )
         messages.success(request, 'Offer added.')
     return _svc_redirect(pk, 'offers')
@@ -1404,16 +1354,14 @@ def service_offer_edit(request, pk, item_pk):
     service = get_object_or_404(Service, pk=pk)
     obj     = get_object_or_404(ServiceOffer, pk=item_pk, service=service)
     if request.method == 'POST':
-        obj.offer_title       = request.POST.get('offer_title', obj.offer_title).strip()
-        obj.offer_icon        = request.POST.get('offer_icon', '')
-        obj.short_description = request.POST.get('short_description', '')
-        obj.order             = int(request.POST.get('order', 0) or 0)
-        obj.is_active         = request.POST.get('is_active') == 'on'
-        obj.save()
-        messages.success(request, 'Offer updated.')
+        obj.offer_title=request.POST.get('offer_title',obj.offer_title).strip()
+        obj.offer_icon=request.POST.get('offer_icon','')
+        obj.short_description=request.POST.get('short_description','')
+        obj.order=int(request.POST.get('order',0) or 0)
+        obj.is_active=request.POST.get('is_active')=='on'
+        obj.save(); messages.success(request, 'Offer updated.')
         return _svc_redirect(pk, 'offers')
-    return render(request, 'dashboard/services/offer_form.html',
-                  {'obj': obj, 'service': service, 'page_title': 'Edit Offer'})
+    return render(request, 'dashboard/services/offer_form.html', {'obj':obj,'service':service,'page_title':'Edit Offer'})
 
 
 @staff_required
@@ -1422,30 +1370,27 @@ def service_offer_delete(request, pk, item_pk):
     service = get_object_or_404(Service, pk=pk)
     obj     = get_object_or_404(ServiceOffer, pk=item_pk, service=service)
     if request.method == 'POST':
-        obj.delete()
-        messages.success(request, 'Offer deleted.')
+        obj.delete(); messages.success(request, 'Offer deleted.')
         return _svc_redirect(pk, 'offers')
-    return render(request, 'dashboard/confirm_delete.html', {'obj': obj, 'page_title': 'Delete Offer'})
+    return render(request, 'dashboard/confirm_delete.html', {'obj':obj,'page_title':'Delete Offer'})
 
 
-# ── Features ───────────────────────────────────────────────────────────────────
 @staff_required
 def service_feature_section_save(request, pk):
     from services.models import Service, ServiceFeatureSection
     service = get_object_or_404(Service, pk=pk)
     if request.method == 'POST':
-        title   = request.POST.get('section_title', '').strip()
+        title   = request.POST.get('section_title','').strip()
         section = ServiceFeatureSection.objects.filter(service=service).first()
         if section:
-            section.section_title    = title
-            section.main_description = request.POST.get('main_description', '')
-            if request.FILES.get('left_main_image'):
-                section.left_main_image = request.FILES['left_main_image']
+            section.section_title=title
+            section.main_description=request.POST.get('main_description','')
+            if request.FILES.get('left_main_image'): section.left_main_image=request.FILES['left_main_image']
             section.save()
         else:
             ServiceFeatureSection.objects.create(
                 service=service, section_title=title,
-                main_description=request.POST.get('main_description', ''),
+                main_description=request.POST.get('main_description',''),
                 left_main_image=request.FILES.get('left_main_image'),
             )
         messages.success(request, 'Feature section saved.')
@@ -1461,9 +1406,9 @@ def service_feature_create(request, pk):
         if section:
             ServiceFeature.objects.create(
                 section=section,
-                feature_title=request.POST.get('feature_title', '').strip(),
-                feature_description=request.POST.get('feature_description', ''),
-                order=int(request.POST.get('order', 0) or 0),
+                feature_title=request.POST.get('feature_title','').strip(),
+                feature_description=request.POST.get('feature_description',''),
+                order=int(request.POST.get('order',0) or 0),
             )
             messages.success(request, 'Feature added.')
         else:
@@ -1477,14 +1422,12 @@ def service_feature_edit(request, pk, item_pk):
     service = get_object_or_404(Service, pk=pk)
     obj     = get_object_or_404(ServiceFeature, pk=item_pk)
     if request.method == 'POST':
-        obj.feature_title       = request.POST.get('feature_title', obj.feature_title).strip()
-        obj.feature_description = request.POST.get('feature_description', '')
-        obj.order               = int(request.POST.get('order', 0) or 0)
-        obj.save()
-        messages.success(request, 'Feature updated.')
+        obj.feature_title=request.POST.get('feature_title',obj.feature_title).strip()
+        obj.feature_description=request.POST.get('feature_description','')
+        obj.order=int(request.POST.get('order',0) or 0)
+        obj.save(); messages.success(request, 'Feature updated.')
         return _svc_redirect(pk, 'features')
-    return render(request, 'dashboard/services/feature_form.html',
-                  {'obj': obj, 'service': service, 'page_title': 'Edit Feature'})
+    return render(request, 'dashboard/services/feature_form.html', {'obj':obj,'service':service,'page_title':'Edit Feature'})
 
 
 @staff_required
@@ -1493,13 +1436,11 @@ def service_feature_delete(request, pk, item_pk):
     service = get_object_or_404(Service, pk=pk)
     obj     = get_object_or_404(ServiceFeature, pk=item_pk)
     if request.method == 'POST':
-        obj.delete()
-        messages.success(request, 'Feature deleted.')
+        obj.delete(); messages.success(request, 'Feature deleted.')
         return _svc_redirect(pk, 'features')
-    return render(request, 'dashboard/confirm_delete.html', {'obj': obj, 'page_title': 'Delete Feature'})
+    return render(request, 'dashboard/confirm_delete.html', {'obj':obj,'page_title':'Delete Feature'})
 
 
-# ── Highlights ─────────────────────────────────────────────────────────────────
 @staff_required
 def service_highlight_create(request, pk):
     from services.models import Service, ServiceHighlight
@@ -1507,12 +1448,12 @@ def service_highlight_create(request, pk):
     if request.method == 'POST':
         ServiceHighlight.objects.create(
             service=service,
-            section_title=request.POST.get('section_title', ''),
-            section_sub_title=request.POST.get('section_sub_title', ''),
-            highlight_title=request.POST.get('highlight_title', '').strip(),
-            highlight_description=request.POST.get('highlight_description', ''),
-            display_order=int(request.POST.get('display_order', 0) or 0),
-            is_active=request.POST.get('is_active') == 'on',
+            section_title=request.POST.get('section_title',''),
+            section_sub_title=request.POST.get('section_sub_title',''),
+            highlight_title=request.POST.get('highlight_title','').strip(),
+            highlight_description=request.POST.get('highlight_description',''),
+            display_order=int(request.POST.get('display_order',0) or 0),
+            is_active=request.POST.get('is_active')=='on',
             highlight_video=request.FILES.get('highlight_video'),
         )
         messages.success(request, 'Highlight added.')
@@ -1525,19 +1466,16 @@ def service_highlight_edit(request, pk, item_pk):
     service = get_object_or_404(Service, pk=pk)
     obj     = get_object_or_404(ServiceHighlight, pk=item_pk, service=service)
     if request.method == 'POST':
-        obj.section_title         = request.POST.get('section_title', '')
-        obj.section_sub_title     = request.POST.get('section_sub_title', '')
-        obj.highlight_title       = request.POST.get('highlight_title', obj.highlight_title).strip()
-        obj.highlight_description = request.POST.get('highlight_description', '')
-        obj.display_order         = int(request.POST.get('display_order', 0) or 0)
-        obj.is_active             = request.POST.get('is_active') == 'on'
-        if request.FILES.get('highlight_video'):
-            obj.highlight_video = request.FILES['highlight_video']
-        obj.save()
-        messages.success(request, 'Highlight updated.')
+        obj.section_title=request.POST.get('section_title','')
+        obj.section_sub_title=request.POST.get('section_sub_title','')
+        obj.highlight_title=request.POST.get('highlight_title',obj.highlight_title).strip()
+        obj.highlight_description=request.POST.get('highlight_description','')
+        obj.display_order=int(request.POST.get('display_order',0) or 0)
+        obj.is_active=request.POST.get('is_active')=='on'
+        if request.FILES.get('highlight_video'): obj.highlight_video=request.FILES['highlight_video']
+        obj.save(); messages.success(request, 'Highlight updated.')
         return _svc_redirect(pk, 'highlights')
-    return render(request, 'dashboard/services/highlight_form.html',
-                  {'obj': obj, 'service': service, 'page_title': 'Edit Highlight'})
+    return render(request, 'dashboard/services/highlight_form.html', {'obj':obj,'service':service,'page_title':'Edit Highlight'})
 
 
 @staff_required
@@ -1546,36 +1484,32 @@ def service_highlight_delete(request, pk, item_pk):
     service = get_object_or_404(Service, pk=pk)
     obj     = get_object_or_404(ServiceHighlight, pk=item_pk, service=service)
     if request.method == 'POST':
-        obj.delete()
-        messages.success(request, 'Highlight deleted.')
+        obj.delete(); messages.success(request, 'Highlight deleted.')
         return _svc_redirect(pk, 'highlights')
-    return render(request, 'dashboard/confirm_delete.html', {'obj': obj, 'page_title': 'Delete Highlight'})
+    return render(request, 'dashboard/confirm_delete.html', {'obj':obj,'page_title':'Delete Highlight'})
 
 
-# ── Location ───────────────────────────────────────────────────────────────────
 @staff_required
 def service_location_save(request, pk):
     from services.models import Service, ServiceLocation
     service = get_object_or_404(Service, pk=pk)
     if request.method == 'POST':
-        title    = request.POST.get('location_main_title', '').strip()
+        title    = request.POST.get('location_main_title','').strip()
         location = ServiceLocation.objects.filter(service=service).first()
         if location:
-            location.location_main_title       = title
-            location.location_main_sub_title   = request.POST.get('location_main_sub_title', '')
-            location.location_main_description = request.POST.get('location_main_description', '')
-            if request.FILES.get('left_main_image'):
-                location.left_main_image = request.FILES['left_main_image']
+            location.location_main_title=title
+            location.location_main_sub_title=request.POST.get('location_main_sub_title','')
+            location.location_main_description=request.POST.get('location_main_description','')
+            if request.FILES.get('left_main_image'): location.left_main_image=request.FILES['left_main_image']
             location.save()
         else:
             ServiceLocation.objects.create(
-                service=service,
-                location_main_title=title,
-                location_main_sub_title=request.POST.get('location_main_sub_title', ''),
-                location_main_description=request.POST.get('location_main_description', ''),
+                service=service, location_main_title=title,
+                location_main_sub_title=request.POST.get('location_main_sub_title',''),
+                location_main_description=request.POST.get('location_main_description',''),
                 left_main_image=request.FILES.get('left_main_image'),
             )
-        messages.success(request, 'Location section saved.')
+        messages.success(request, 'Location saved.')
     return _svc_redirect(pk, 'location')
 
 
@@ -1587,10 +1521,10 @@ def service_nearby_create(request, pk):
     if request.method == 'POST' and location:
         ServiceNearbyPlace.objects.create(
             location=location,
-            nearby_place_name=request.POST.get('nearby_place_name', '').strip(),
-            distance=request.POST.get('distance', ''),
-            map_link=request.POST.get('map_link', ''),
-            order=int(request.POST.get('order', 0) or 0),
+            nearby_place_name=request.POST.get('nearby_place_name','').strip(),
+            distance=request.POST.get('distance',''),
+            map_link=request.POST.get('map_link',''),
+            order=int(request.POST.get('order',0) or 0),
         )
         messages.success(request, 'Nearby place added.')
     return _svc_redirect(pk, 'location')
@@ -1602,15 +1536,13 @@ def service_nearby_edit(request, pk, item_pk):
     service = get_object_or_404(Service, pk=pk)
     obj     = get_object_or_404(ServiceNearbyPlace, pk=item_pk)
     if request.method == 'POST':
-        obj.nearby_place_name = request.POST.get('nearby_place_name', obj.nearby_place_name).strip()
-        obj.distance          = request.POST.get('distance', '')
-        obj.map_link          = request.POST.get('map_link', '')
-        obj.order             = int(request.POST.get('order', 0) or 0)
-        obj.save()
-        messages.success(request, 'Place updated.')
+        obj.nearby_place_name=request.POST.get('nearby_place_name',obj.nearby_place_name).strip()
+        obj.distance=request.POST.get('distance','')
+        obj.map_link=request.POST.get('map_link','')
+        obj.order=int(request.POST.get('order',0) or 0)
+        obj.save(); messages.success(request, 'Place updated.')
         return _svc_redirect(pk, 'location')
-    return render(request, 'dashboard/services/nearby_form.html',
-                  {'obj': obj, 'service': service, 'page_title': f'Edit — {obj.nearby_place_name}'})
+    return render(request, 'dashboard/services/nearby_form.html', {'obj':obj,'service':service,'page_title':f'Edit — {obj.nearby_place_name}'})
 
 
 @staff_required
@@ -1619,25 +1551,20 @@ def service_nearby_delete(request, pk, item_pk):
     service = get_object_or_404(Service, pk=pk)
     obj     = get_object_or_404(ServiceNearbyPlace, pk=item_pk)
     if request.method == 'POST':
-        obj.delete()
-        messages.success(request, 'Place deleted.')
+        obj.delete(); messages.success(request, 'Place deleted.')
         return _svc_redirect(pk, 'location')
-    return render(request, 'dashboard/confirm_delete.html',
-                  {'obj': obj, 'page_title': f'Delete — {obj.nearby_place_name}'})
+    return render(request, 'dashboard/confirm_delete.html', {'obj':obj,'page_title':f'Delete — {obj.nearby_place_name}'})
 
 
-# ── Categories ─────────────────────────────────────────────────────────────────
 @staff_required
 def service_categories(request):
     from services.models import ServiceCategory
     from django.db.models import Count
-    cats       = ServiceCategory.objects.annotate(service_count=Count('services')).order_by('order', 'name')
+    cats       = ServiceCategory.objects.annotate(service_count=Count('services')).order_by('order','name')
     next_order = (cats.last().order + 1) if cats.exists() else 1
     return render(request, 'dashboard/services/categories.html', {
-        'categories':    cats,
-        'next_order':    next_order,
-        'color_presets': COLOR_PRESETS,
-        'page_title':    'Service Categories',
+        'categories': cats, 'next_order': next_order,
+        'color_presets': COLOR_PRESETS, 'page_title': 'Service Categories',
     })
 
 
@@ -1646,21 +1573,19 @@ def service_cat_create(request):
     from services.models import ServiceCategory
     from django.utils.text import slugify
     if request.method == 'POST':
-        name = request.POST.get('name', '').strip()
+        name = request.POST.get('name','').strip()
         if not name:
             messages.error(request, 'Category name is required.')
         else:
             slug = slugify(name); base = slug; n = 1
-            while ServiceCategory.objects.filter(slug=slug).exists():
-                slug = f'{base}-{n}'; n += 1
-            color = request.POST.get('color_text', '').strip() or request.POST.get('color', '#0284f0')
+            while ServiceCategory.objects.filter(slug=slug).exists(): slug = f'{base}-{n}'; n += 1
+            color = request.POST.get('color_text','').strip() or request.POST.get('color','#0284f0')
             ServiceCategory.objects.create(
                 name=name, slug=slug,
-                description=request.POST.get('description', ''),
-                icon=request.POST.get('icon', ''),
-                color=color,
-                order=int(request.POST.get('order', 0) or 0),
-                is_active=request.POST.get('is_active') == 'on',
+                description=request.POST.get('description',''),
+                icon=request.POST.get('icon',''), color=color,
+                order=int(request.POST.get('order',0) or 0),
+                is_active=request.POST.get('is_active')=='on',
             )
             messages.success(request, f'Category "{name}" created.')
     return redirect('dashboard:service_categories')
@@ -1671,17 +1596,16 @@ def service_cat_edit(request, pk):
     from services.models import ServiceCategory
     obj = get_object_or_404(ServiceCategory, pk=pk)
     if request.method == 'POST':
-        obj.name        = request.POST.get('name', obj.name).strip()
-        obj.description = request.POST.get('description', '')
-        obj.icon        = request.POST.get('icon', '')
-        obj.color       = request.POST.get('color', obj.color).strip() or obj.color
-        obj.order       = int(request.POST.get('order', 0) or 0)
-        obj.is_active   = request.POST.get('is_active') == 'on'
-        obj.save()
-        messages.success(request, f'Category "{obj.name}" updated.')
+        obj.name=request.POST.get('name',obj.name).strip()
+        obj.description=request.POST.get('description','')
+        obj.icon=request.POST.get('icon','')
+        obj.color=request.POST.get('color',obj.color).strip() or obj.color
+        obj.order=int(request.POST.get('order',0) or 0)
+        obj.is_active=request.POST.get('is_active')=='on'
+        obj.save(); messages.success(request, f'Category "{obj.name}" updated.')
         return redirect('dashboard:service_categories')
     return render(request, 'dashboard/services/category_form.html', {
-        'obj': obj, 'color_presets': COLOR_PRESETS, 'page_title': f'Edit — {obj.name}',
+        'obj':obj,'color_presets':COLOR_PRESETS,'page_title':f'Edit — {obj.name}',
     })
 
 
@@ -1690,9 +1614,7 @@ def service_cat_delete(request, pk):
     from services.models import ServiceCategory
     obj = get_object_or_404(ServiceCategory, pk=pk)
     if request.method == 'POST':
-        name = obj.name
-        obj.delete()
+        name = obj.name; obj.delete()
         messages.success(request, f'Category "{name}" deleted.')
         return redirect('dashboard:service_categories')
-    return render(request, 'dashboard/confirm_delete.html',
-                  {'obj': obj, 'page_title': f'Delete Category — {obj.name}'})
+    return render(request, 'dashboard/confirm_delete.html', {'obj':obj,'page_title':f'Delete Category — {obj.name}'})

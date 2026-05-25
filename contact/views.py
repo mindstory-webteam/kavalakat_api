@@ -6,16 +6,23 @@ from django_filters.rest_framework import DjangoFilterBackend
 from django.db.models import Count
 
 from kavalakat.permissions import IsAdminOrReadOnly
-from .models import Contact, Career, Enquiry
+from .models import Contact, Career, JobApplication, Enquiry
 from .serializers import (
     ContactSerializer,
     CareerSerializer,
+    JobApplicationPublicSerializer,
+    JobApplicationAdminSerializer,
     EnquiryPublicSerializer,
     EnquiryAdminSerializer,
 )
 
 
-# ── Contact Info ──────────────────────────────────────────────────────────────
+def _get_ip(request):
+    xff = request.META.get('HTTP_X_FORWARDED_FOR', '')
+    return xff.split(',')[0].strip() if xff else request.META.get('REMOTE_ADDR')
+
+
+# ── Contact ───────────────────────────────────────────────────────────────────
 class ContactViewSet(viewsets.ModelViewSet):
     serializer_class   = ContactSerializer
     permission_classes = [IsAdminOrReadOnly]
@@ -32,17 +39,15 @@ class ContactViewSet(viewsets.ModelViewSet):
         s = self.get_serializer(data=request.data)
         s.is_valid(raise_exception=True)
         obj = s.save()
-        return Response(
-            {'success': True, 'message': 'Contact info created.', 'data': self.get_serializer(obj).data},
-            status=status.HTTP_201_CREATED,
-        )
+        return Response({'success': True, 'message': 'Created.', 'data': self.get_serializer(obj).data},
+                        status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
         s = self.get_serializer(self.get_object(), data=request.data, partial=partial)
         s.is_valid(raise_exception=True)
         obj = s.save()
-        return Response({'success': True, 'message': 'Contact info updated.', 'data': self.get_serializer(obj).data})
+        return Response({'success': True, 'message': 'Updated.', 'data': self.get_serializer(obj).data})
 
     def partial_update(self, request, *args, **kwargs):
         return self.update(request, *args, partial=True, **kwargs)
@@ -54,6 +59,18 @@ class ContactViewSet(viewsets.ModelViewSet):
 
 # ── Career ────────────────────────────────────────────────────────────────────
 class CareerViewSet(viewsets.ModelViewSet):
+    """
+    GET    /api/careers/                     list active jobs
+    GET    /api/careers/<id>/                retrieve one
+    POST   /api/careers/                     create  (admin)
+    PUT    /api/careers/<id>/                update  (admin)
+    PATCH  /api/careers/<id>/                partial (admin)
+    DELETE /api/careers/<id>/                delete  (admin)
+    POST   /api/careers/<id>/toggle-active/  flip is_active
+
+    Filter: ?job_type=Full-Time  ?is_active=true  ?department=Sales
+    Search: ?search=developer
+    """
     serializer_class   = CareerSerializer
     permission_classes = [IsAdminOrReadOnly]
     filter_backends    = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
@@ -63,7 +80,7 @@ class CareerViewSet(viewsets.ModelViewSet):
     ordering           = ['-created_at']
 
     def get_queryset(self):
-        qs = Career.objects.all()
+        qs = Career.objects.annotate(app_count=Count('applications'))
         if not (self.request.user and self.request.user.is_staff):
             qs = qs.filter(is_active=True)
         return qs
@@ -73,7 +90,8 @@ class CareerViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(qs)
         if page is not None:
             return self.get_paginated_response(self.get_serializer(page, many=True).data)
-        return Response({'success': True, 'count': qs.count(), 'data': self.get_serializer(qs, many=True).data})
+        return Response({'success': True, 'count': qs.count(),
+                         'data': self.get_serializer(qs, many=True).data})
 
     def retrieve(self, request, *args, **kwargs):
         return Response({'success': True, 'data': self.get_serializer(self.get_object()).data})
@@ -82,24 +100,24 @@ class CareerViewSet(viewsets.ModelViewSet):
         s = self.get_serializer(data=request.data)
         s.is_valid(raise_exception=True)
         obj = s.save()
-        return Response(
-            {'success': True, 'message': 'Career posted.', 'data': self.get_serializer(obj).data},
-            status=status.HTTP_201_CREATED,
-        )
+        return Response({'success': True, 'message': 'Career posted.',
+                         'data': self.get_serializer(obj).data}, status=status.HTTP_201_CREATED)
 
     def update(self, request, *args, **kwargs):
         partial = kwargs.pop('partial', False)
         s = self.get_serializer(self.get_object(), data=request.data, partial=partial)
         s.is_valid(raise_exception=True)
         obj = s.save()
-        return Response({'success': True, 'message': 'Career updated.', 'data': self.get_serializer(obj).data})
+        return Response({'success': True, 'message': 'Career updated.',
+                         'data': self.get_serializer(obj).data})
 
     def partial_update(self, request, *args, **kwargs):
         return self.update(request, *args, partial=True, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         obj = self.get_object(); title = obj.title; obj.delete()
-        return Response({'success': True, 'message': f'Career "{title}" deleted.'}, status=status.HTTP_200_OK)
+        return Response({'success': True, 'message': f'"{title}" deleted.'},
+                        status=status.HTTP_200_OK)
 
     @action(detail=True, methods=['post'], url_path='toggle-active',
             permission_classes=[IsAdminOrReadOnly])
@@ -110,22 +128,114 @@ class CareerViewSet(viewsets.ModelViewSet):
         return Response({'success': True, 'is_active': obj.is_active})
 
 
-# ── Enquiry ───────────────────────────────────────────────────────────────────
-class EnquiryViewSet(viewsets.ModelViewSet):
+# ── Job Application ───────────────────────────────────────────────────────────
+class JobApplicationViewSet(viewsets.ModelViewSet):
     """
     PUBLIC:
-      POST /api/enquiry/  →  submit contact form  (Full Name, Email, Phone,
-                             Subject, Message, terms_accepted)
+      POST /api/applications/           submit application
+        Fields: name, email, phone, resume (PDF), cover_letter, career (optional FK id)
 
     ADMIN:
-      GET    /api/enquiry/                      list + filter ?status=new
-      GET    /api/enquiry/<id>/                 retrieve (auto-marks new→read)
-      PATCH  /api/enquiry/<id>/                 update status / admin_note
-      DELETE /api/enquiry/<id>/                 delete
-      POST   /api/enquiry/<id>/mark-replied/    set status=replied
-      POST   /api/enquiry/<id>/mark-closed/     set status=closed
-      GET    /api/enquiry/stats/                counts by status
+      GET    /api/applications/                     list all
+      GET    /api/applications/<id>/                retrieve
+      PATCH  /api/applications/<id>/                update status / note
+      DELETE /api/applications/<id>/                delete
+      POST   /api/applications/<id>/shortlist/      → shortlisted
+      POST   /api/applications/<id>/reject/          → rejected
+      POST   /api/applications/<id>/hire/            → hired
+      GET    /api/applications/stats/               counts by status
+
+    Filter: ?status=new  ?career=<id>
+    Search: ?search=john
     """
+    filter_backends  = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['status', 'career']
+    search_fields    = ['name', 'email', 'phone']
+    ordering_fields  = ['created_at']
+    ordering         = ['-created_at']
+
+    def get_queryset(self):
+        return JobApplication.objects.select_related('career').all()
+
+    def get_serializer_class(self):
+        if self.request.user and self.request.user.is_staff:
+            return JobApplicationAdminSerializer
+        return JobApplicationPublicSerializer
+
+    def get_permissions(self):
+        if self.action == 'create':
+            return [AllowAny()]
+        return [IsAdminUser()]
+
+    def list(self, request, *args, **kwargs):
+        qs = self.filter_queryset(self.get_queryset())
+        page = self.paginate_queryset(qs)
+        if page is not None:
+            return self.get_paginated_response(self.get_serializer(page, many=True).data)
+        return Response({'success': True, 'count': qs.count(),
+                         'data': self.get_serializer(qs, many=True).data})
+
+    def retrieve(self, request, *args, **kwargs):
+        return Response({'success': True, 'data': self.get_serializer(self.get_object()).data})
+
+    def create(self, request, *args, **kwargs):
+        s = JobApplicationPublicSerializer(data=request.data)
+        s.is_valid(raise_exception=True)
+        obj = s.save(ip_address=_get_ip(request))
+        return Response(
+            {'success': True,
+             'message': 'Application submitted successfully! We will review it and get back to you.',
+             'data': JobApplicationPublicSerializer(obj).data},
+            status=status.HTTP_201_CREATED,
+        )
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        s = JobApplicationAdminSerializer(self.get_object(), data=request.data, partial=partial,
+                                          context=self.get_serializer_context())
+        s.is_valid(raise_exception=True)
+        obj = s.save()
+        return Response({'success': True, 'message': 'Application updated.',
+                         'data': JobApplicationAdminSerializer(obj, context=self.get_serializer_context()).data})
+
+    def partial_update(self, request, *args, **kwargs):
+        return self.update(request, *args, partial=True, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        self.get_object().delete()
+        return Response({'success': True, 'message': 'Application deleted.'}, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
+    def shortlist(self, request, pk=None):
+        obj = self.get_object(); obj.status = 'shortlisted'; obj.save(update_fields=['status'])
+        return Response({'success': True, 'status': obj.status})
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
+    def reject(self, request, pk=None):
+        obj = self.get_object(); obj.status = 'rejected'; obj.save(update_fields=['status'])
+        return Response({'success': True, 'status': obj.status})
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAdminUser])
+    def hire(self, request, pk=None):
+        obj = self.get_object(); obj.status = 'hired'; obj.save(update_fields=['status'])
+        return Response({'success': True, 'status': obj.status})
+
+    @action(detail=False, methods=['get'], permission_classes=[IsAdminUser])
+    def stats(self, request):
+        counts = {r['status']: r['count']
+                  for r in JobApplication.objects.values('status').annotate(count=Count('id'))}
+        return Response({'success': True, 'data': {
+            'new':         counts.get('new',         0),
+            'reviewed':    counts.get('reviewed',    0),
+            'shortlisted': counts.get('shortlisted', 0),
+            'rejected':    counts.get('rejected',    0),
+            'hired':       counts.get('hired',       0),
+            'total':       JobApplication.objects.count(),
+        }})
+
+
+# ── Enquiry ───────────────────────────────────────────────────────────────────
+class EnquiryViewSet(viewsets.ModelViewSet):
     filter_backends  = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['status']
     search_fields    = ['name', 'email', 'phone', 'subject', 'message']
@@ -150,7 +260,8 @@ class EnquiryViewSet(viewsets.ModelViewSet):
         page = self.paginate_queryset(qs)
         if page is not None:
             return self.get_paginated_response(self.get_serializer(page, many=True).data)
-        return Response({'success': True, 'count': qs.count(), 'data': self.get_serializer(qs, many=True).data})
+        return Response({'success': True, 'count': qs.count(),
+                         'data': self.get_serializer(qs, many=True).data})
 
     def retrieve(self, request, *args, **kwargs):
         obj = self.get_object()
@@ -162,15 +273,11 @@ class EnquiryViewSet(viewsets.ModelViewSet):
     def create(self, request, *args, **kwargs):
         s = EnquiryPublicSerializer(data=request.data)
         s.is_valid(raise_exception=True)
-        xff = request.META.get('HTTP_X_FORWARDED_FOR', '')
-        ip  = xff.split(',')[0].strip() if xff else request.META.get('REMOTE_ADDR')
-        obj = s.save(ip_address=ip)
+        obj = s.save(ip_address=_get_ip(request))
         return Response(
-            {
-                'success': True,
-                'message': 'Thank you for contacting us! We will get back to you within 24 hours.',
-                'data':    EnquiryPublicSerializer(obj).data,
-            },
+            {'success': True,
+             'message': 'Thank you! We will get back to you within 24 hours.',
+             'data': EnquiryPublicSerializer(obj).data},
             status=status.HTTP_201_CREATED,
         )
 
@@ -179,44 +286,33 @@ class EnquiryViewSet(viewsets.ModelViewSet):
         s = EnquiryAdminSerializer(self.get_object(), data=request.data, partial=partial)
         s.is_valid(raise_exception=True)
         obj = s.save()
-        return Response({'success': True, 'message': 'Enquiry updated.', 'data': EnquiryAdminSerializer(obj).data})
+        return Response({'success': True, 'message': 'Updated.', 'data': EnquiryAdminSerializer(obj).data})
 
     def partial_update(self, request, *args, **kwargs):
         return self.update(request, *args, partial=True, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         self.get_object().delete()
-        return Response({'success': True, 'message': 'Enquiry deleted.'}, status=status.HTTP_200_OK)
+        return Response({'success': True, 'message': 'Deleted.'}, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['post'], url_path='mark-replied',
-            permission_classes=[IsAdminUser])
+    @action(detail=True, methods=['post'], url_path='mark-replied', permission_classes=[IsAdminUser])
     def mark_replied(self, request, pk=None):
-        obj = self.get_object()
-        obj.status = Enquiry.STATUS_REPLIED
-        obj.save(update_fields=['status'])
+        obj = self.get_object(); obj.status = 'replied'; obj.save(update_fields=['status'])
         return Response({'success': True, 'status': obj.status})
 
-    @action(detail=True, methods=['post'], url_path='mark-closed',
-            permission_classes=[IsAdminUser])
+    @action(detail=True, methods=['post'], url_path='mark-closed', permission_classes=[IsAdminUser])
     def mark_closed(self, request, pk=None):
-        obj = self.get_object()
-        obj.status = Enquiry.STATUS_CLOSED
-        obj.save(update_fields=['status'])
+        obj = self.get_object(); obj.status = 'closed'; obj.save(update_fields=['status'])
         return Response({'success': True, 'status': obj.status})
 
     @action(detail=False, methods=['get'], permission_classes=[IsAdminUser])
     def stats(self, request):
-        counts = {
-            row['status']: row['count']
-            for row in Enquiry.objects.values('status').annotate(count=Count('id'))
-        }
-        return Response({
-            'success': True,
-            'data': {
-                'new':     counts.get('new',     0),
-                'read':    counts.get('read',    0),
-                'replied': counts.get('replied', 0),
-                'closed':  counts.get('closed',  0),
-                'total':   Enquiry.objects.count(),
-            },
-        })
+        counts = {r['status']: r['count']
+                  for r in Enquiry.objects.values('status').annotate(count=Count('id'))}
+        return Response({'success': True, 'data': {
+            'new':     counts.get('new',     0),
+            'read':    counts.get('read',    0),
+            'replied': counts.get('replied', 0),
+            'closed':  counts.get('closed',  0),
+            'total':   Enquiry.objects.count(),
+        }})

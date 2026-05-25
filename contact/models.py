@@ -1,7 +1,7 @@
 from django.db import models
 
 
-# ── Contact Info (single record) ─────────────────────────────────────────────
+# ── Contact Info ──────────────────────────────────────────────────────────────
 class Contact(models.Model):
     phone          = models.CharField(max_length=20)
     alt_phone      = models.CharField(max_length=20, blank=True)
@@ -56,40 +56,71 @@ class Career(models.Model):
         return self.title
 
 
-# ── Enquiry / Contact Form Submission ─────────────────────────────────────────
+# ── Job Application ───────────────────────────────────────────────────────────
+class JobApplication(models.Model):
+    STATUS_NEW         = 'new'
+    STATUS_REVIEWED    = 'reviewed'
+    STATUS_SHORTLISTED = 'shortlisted'
+    STATUS_REJECTED    = 'rejected'
+    STATUS_HIRED       = 'hired'
+    STATUS_CHOICES = [
+        ('new',         'New'),
+        ('reviewed',    'Reviewed'),
+        ('shortlisted', 'Shortlisted'),
+        ('rejected',    'Rejected'),
+        ('hired',       'Hired'),
+    ]
+
+    career       = models.ForeignKey(Career, on_delete=models.SET_NULL,
+                       null=True, blank=True, related_name='applications')
+    name         = models.CharField(max_length=255)
+    email        = models.EmailField()
+    phone        = models.CharField(max_length=20)
+    resume       = models.FileField(upload_to='applications/resumes/')
+    cover_letter = models.TextField()
+    status       = models.CharField(max_length=20, choices=STATUS_CHOICES, default='new')
+    admin_note   = models.TextField(blank=True)
+    ip_address   = models.GenericIPAddressField(null=True, blank=True)
+    created_at   = models.DateTimeField(auto_now_add=True)
+    updated_at   = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering     = ['-created_at']
+        verbose_name = 'Job Application'
+
+    def __str__(self):
+        job = self.career.title if self.career else 'General'
+        return f'{self.name} → {job}'
+
+
+# ── Enquiry ───────────────────────────────────────────────────────────────────
 class Enquiry(models.Model):
-    # Status constants
     STATUS_NEW     = 'new'
     STATUS_READ    = 'read'
     STATUS_REPLIED = 'replied'
     STATUS_CLOSED  = 'closed'
     STATUS_CHOICES = [
-        (STATUS_NEW,     'New'),
-        (STATUS_READ,    'Read'),
-        (STATUS_REPLIED, 'Replied'),
-        (STATUS_CLOSED,  'Closed'),
+        ('new',     'New'),
+        ('read',    'Read'),
+        ('replied', 'Replied'),
+        ('closed',  'Closed'),
     ]
 
-    # Form fields matching the frontend form
-    name    = models.CharField(max_length=255, verbose_name='Full Name')
-    email   = models.EmailField(verbose_name='Email')
-    phone   = models.CharField(max_length=20, verbose_name='Phone')
-    subject = models.CharField(max_length=255, blank=True, verbose_name='Subject')
-    message = models.TextField(verbose_name='Message')
-
-    # Terms & Conditions acceptance
-    terms_accepted = models.BooleanField(default=False, verbose_name='Terms & Conditions Accepted')
-
-    # Admin / internal fields
-    status     = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_NEW)
-    admin_note = models.TextField(blank=True)
-    ip_address = models.GenericIPAddressField(null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    name           = models.CharField(max_length=255)
+    email          = models.EmailField()
+    phone          = models.CharField(max_length=20)
+    subject        = models.CharField(max_length=255, blank=True)
+    message        = models.TextField()
+    terms_accepted = models.BooleanField(default=False)
+    status         = models.CharField(max_length=20, choices=STATUS_CHOICES, default='new')
+    admin_note     = models.TextField(blank=True)
+    ip_address     = models.GenericIPAddressField(null=True, blank=True)
+    created_at     = models.DateTimeField(auto_now_add=True)
+    updated_at     = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering    = ['-created_at']
+        ordering     = ['-created_at']
         verbose_name = 'Enquiry'
 
     def __str__(self):
-        return f'[{self.get_status_display()}] {self.name} — {self.email}'
+        return f'[{self.get_status_display()}] {self.name}'

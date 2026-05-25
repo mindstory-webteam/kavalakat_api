@@ -1,0 +1,141 @@
+{% extends 'dashboard/base.html' %}
+{% block topbar_actions %}
+<a href="{% url 'dashboard:careers_list' %}" class="btn btn-secondary">
+  <i class="fa-solid fa-arrow-left"></i> Back to Jobs
+</a>
+{% endblock %}
+{% block content %}
+
+<!-- Status tabs -->
+<div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
+  <a href="?{% if career_id %}career={{ career_id }}&{% endif %}status="
+     class="btn {% if not status %}btn-primary{% else %}btn-secondary{% endif %}">
+    All <span class="badge badge-gray" style="margin-left:4px;">{{ counts.total }}</span>
+  </a>
+  <a href="?{% if career_id %}career={{ career_id }}&{% endif %}status=new"
+     class="btn {% if status == 'new' %}btn-primary{% else %}btn-secondary{% endif %}">
+    New <span class="badge badge-red" style="margin-left:4px;">{{ counts.new }}</span>
+  </a>
+  <a href="?{% if career_id %}career={{ career_id }}&{% endif %}status=reviewed"
+     class="btn {% if status == 'reviewed' %}btn-primary{% else %}btn-secondary{% endif %}">
+    Reviewed <span class="badge badge-blue" style="margin-left:4px;">{{ counts.reviewed }}</span>
+  </a>
+  <a href="?{% if career_id %}career={{ career_id }}&{% endif %}status=shortlisted"
+     class="btn {% if status == 'shortlisted' %}btn-primary{% else %}btn-secondary{% endif %}">
+    Shortlisted <span class="badge badge-orange" style="margin-left:4px;">{{ counts.shortlisted }}</span>
+  </a>
+  <a href="?{% if career_id %}career={{ career_id }}&{% endif %}status=hired"
+     class="btn {% if status == 'hired' %}btn-primary{% else %}btn-secondary{% endif %}">
+    Hired <span class="badge badge-green" style="margin-left:4px;">{{ counts.hired }}</span>
+  </a>
+  <a href="?{% if career_id %}career={{ career_id }}&{% endif %}status=rejected"
+     class="btn {% if status == 'rejected' %}btn-primary{% else %}btn-secondary{% endif %}">
+    Rejected <span class="badge badge-gray" style="margin-left:4px;">{{ counts.rejected }}</span>
+  </a>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <form method="get" style="display:flex;gap:10px;">
+      {% if career_id %}<input type="hidden" name="career" value="{{ career_id }}"/>{% endif %}
+      <input type="hidden" name="status" value="{{ status }}"/>
+      <div class="search-bar">
+        <i class="fa-solid fa-search"></i>
+        <input type="text" name="search" value="{{ search }}" placeholder="Search name, email…"/>
+      </div>
+      <button class="btn btn-secondary" type="submit"><i class="fa-solid fa-search"></i></button>
+    </form>
+    {% if career_filter %}
+    <span style="color:var(--accent3);font-size:13px;font-weight:600;">
+      <i class="fa-solid fa-filter"></i> {{ career_filter.title }}
+    </span>
+    {% endif %}
+    <span class="text-muted text-sm">{{ applications.paginator.count }} result{{ applications.paginator.count|pluralize }}</span>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Applicant</th>
+          <th>Phone</th>
+          <th>Applied For</th>
+          <th>Resume</th>
+          <th>Status</th>
+          <th>Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for app in applications %}
+        <tr>
+          <td>
+            <div style="font-weight:600;">{{ app.name }}</div>
+            <div class="text-muted text-sm">{{ app.email }}</div>
+          </td>
+          <td class="text-muted text-sm">{{ app.phone }}</td>
+          <td class="text-muted text-sm">
+            {{ app.career.title|default:"General Application" }}
+          </td>
+          <td>
+            {% if app.resume %}
+            <a href="{{ app.resume.url }}" target="_blank"
+               class="btn btn-secondary btn-sm" style="font-size:11px;">
+              <i class="fa-solid fa-file-pdf" style="color:#ef4444;"></i> View PDF
+            </a>
+            {% else %}
+            <span class="text-muted">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if app.status == 'new' %}<span class="badge badge-red">🔴 New</span>
+            {% elif app.status == 'reviewed' %}<span class="badge badge-blue">🔵 Reviewed</span>
+            {% elif app.status == 'shortlisted' %}<span class="badge badge-orange">🟠 Shortlisted</span>
+            {% elif app.status == 'hired' %}<span class="badge badge-green">🟢 Hired</span>
+            {% else %}<span class="badge badge-gray">⚫ Rejected</span>
+            {% endif %}
+          </td>
+          <td class="text-muted text-sm">{{ app.created_at|date:"d M Y" }}</td>
+          <td>
+            <div class="flex gap-2">
+              <a href="{% url 'dashboard:application_detail' app.pk %}"
+                 class="btn btn-secondary btn-sm btn-icon" title="View">
+                <i class="fa-solid fa-eye"></i>
+              </a>
+              <a href="{% url 'dashboard:application_delete' app.pk %}"
+                 class="btn btn-danger btn-sm btn-icon" title="Delete"
+                 onclick="return confirm('Delete application from {{ app.name }}?')">
+                <i class="fa-solid fa-trash"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7">
+            <div class="empty-state">
+              <i class="fa-solid fa-file-lines"></i>
+              No applications found.
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if applications.has_other_pages %}
+  <div class="card-body">
+    <div class="pagination">
+      {% if applications.has_previous %}
+      <a href="?page={{ applications.previous_page_number }}&status={{ status }}&search={{ search }}{% if career_id %}&career={{ career_id }}{% endif %}">‹</a>
+      {% endif %}
+      <span class="current">{{ applications.number }} / {{ applications.paginator.num_pages }}</span>
+      {% if applications.has_next %}
+      <a href="?page={{ applications.next_page_number }}&status={{ status }}&search={{ search }}{% if career_id %}&career={{ career_id }}{% endif %}">›</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

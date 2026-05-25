@@ -1,0 +1,126 @@
+{% extends 'dashboard/base.html' %}
+{% block topbar_actions %}
+<a href="{% url 'dashboard:applications_list' %}" class="btn btn-secondary">
+  <i class="fa-solid fa-arrow-left"></i> Back
+</a>
+<a href="{% url 'dashboard:application_delete' obj.pk %}" class="btn btn-danger"
+   onclick="return confirm('Delete application from {{ obj.name }}?')">
+  <i class="fa-solid fa-trash"></i> Delete
+</a>
+{% endblock %}
+{% block content %}
+<div style="display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start;">
+
+  <!-- Left: Cover Letter + Admin Note -->
+  <div>
+    <div class="card mb-4">
+      <div class="card-header"><span class="card-title">Cover Letter</span></div>
+      <div class="card-body">
+        <div style="font-size:14px;line-height:1.8;color:var(--text);white-space:pre-wrap;">{{ obj.cover_letter }}</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header"><span class="card-title">Admin Note</span></div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="status" value="{{ obj.status }}"/>
+          <textarea name="admin_note" class="form-control" rows="4"
+                    placeholder="Internal notes…">{{ obj.admin_note }}</textarea>
+          <button type="submit" class="btn btn-primary" style="margin-top:12px;">
+            <i class="fa-solid fa-floppy-disk"></i> Save Note
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Applicant Info + Resume + Status -->
+  <div style="display:flex;flex-direction:column;gap:16px;">
+
+    <!-- Applicant Info -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Applicant</span></div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
+        <div>
+          <div class="text-muted text-sm">Full Name</div>
+          <div style="font-weight:600;margin-top:3px;">{{ obj.name }}</div>
+        </div>
+        <div>
+          <div class="text-muted text-sm">Email</div>
+          <a href="mailto:{{ obj.email }}" style="color:var(--accent3);display:block;margin-top:3px;">
+            {{ obj.email }}
+          </a>
+        </div>
+        <div>
+          <div class="text-muted text-sm">Phone</div>
+          <a href="tel:{{ obj.phone }}" style="color:var(--accent3);display:block;margin-top:3px;">
+            {{ obj.phone }}
+          </a>
+        </div>
+        <div>
+          <div class="text-muted text-sm">Applied For</div>
+          <div style="margin-top:3px;font-weight:500;">
+            {{ obj.career.title|default:"General Application" }}
+          </div>
+        </div>
+        <div>
+          <div class="text-muted text-sm">Applied On</div>
+          <div style="margin-top:3px;font-size:13px;">{{ obj.created_at|date:"d M Y, H:i" }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resume -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Resume</span></div>
+      <div class="card-body">
+        {% if obj.resume %}
+        <a href="{{ obj.resume.url }}" target="_blank" class="btn btn-secondary"
+           style="width:100%;text-align:center;justify-content:center;">
+          <i class="fa-solid fa-file-pdf" style="color:#ef4444;font-size:16px;"></i>
+          View / Download Resume
+        </a>
+        {% else %}
+        <span class="text-muted text-sm">No resume uploaded.</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Update Status -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Update Status</span></div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <textarea name="admin_note" style="display:none;">{{ obj.admin_note }}</textarea>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <button type="submit" name="status" value="new"
+                    class="btn {% if obj.status == 'new' %}btn-primary{% else %}btn-secondary{% endif %}">
+              🔴 New
+            </button>
+            <button type="submit" name="status" value="reviewed"
+                    class="btn {% if obj.status == 'reviewed' %}btn-primary{% else %}btn-secondary{% endif %}">
+              🔵 Reviewed
+            </button>
+            <button type="submit" name="status" value="shortlisted"
+                    class="btn {% if obj.status == 'shortlisted' %}btn-primary{% else %}btn-secondary{% endif %}">
+              🟠 Shortlisted
+            </button>
+            <button type="submit" name="status" value="hired"
+                    class="btn {% if obj.status == 'hired' %}btn-primary{% else %}btn-secondary{% endif %}">
+              🟢 Hired
+            </button>
+            <button type="submit" name="status" value="rejected"
+                    class="btn {% if obj.status == 'rejected' %}btn-primary{% else %}btn-secondary{% endif %}">
+              ⚫ Rejected
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

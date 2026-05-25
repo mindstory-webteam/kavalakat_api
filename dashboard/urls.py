@@ -45,6 +45,10 @@ urlpatterns = [
     path('careers/<int:pk>/edit/',   views.careers_edit,   name='careers_edit'),
     path('careers/<int:pk>/delete/', views.careers_delete, name='careers_delete'),
 
+    path('applications/',                 views.applications_list,  name='applications_list'),
+    path('applications/<int:pk>/',        views.application_detail, name='application_detail'),
+    path('applications/<int:pk>/delete/', views.application_delete, name='application_delete'),
+
     # Contact
     path('contact/', views.contact_info, name='contact_info'),
 
