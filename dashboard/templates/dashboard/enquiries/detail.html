@@ -1,17 +1,40 @@
 {% extends 'dashboard/base.html' %}
+
 {% block topbar_actions %}
-  <a href="{% url 'dashboard:enquiry_list' %}" class="btn btn-secondary"><i class="fa-solid fa-arrow-left"></i> Back</a>
-  <a href="{% url 'dashboard:enquiry_delete' obj.pk %}" class="btn btn-danger"><i class="fa-solid fa-trash"></i> Delete</a>
+<a href="{% url 'dashboard:enquiry_list' %}" class="btn btn-secondary">
+  <i class="fa-solid fa-arrow-left"></i> Back
+</a>
+<a href="{% url 'dashboard:enquiry_delete' obj.pk %}" class="btn btn-danger"
+   onclick="return confirm('Delete this enquiry from {{ obj.name }}?')">
+  <i class="fa-solid fa-trash"></i> Delete
+</a>
 {% endblock %}
+
 {% block content %}
 <div style="display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start;">
+
+  <!-- Left: Message + Admin Note -->
   <div>
+
+    <!-- Subject (if present) -->
+    {% if obj.subject %}
+    <div class="card mb-4">
+      <div class="card-header"><span class="card-title">Subject</span></div>
+      <div class="card-body">
+        <div style="font-size:15px;font-weight:600;color:var(--text);">{{ obj.subject }}</div>
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Message -->
     <div class="card mb-4">
       <div class="card-header"><span class="card-title">Message</span></div>
       <div class="card-body">
-        <div style="font-size:14px;line-height:1.7;color:var(--text);">{{ obj.message }}</div>
+        <div style="font-size:14px;line-height:1.8;color:var(--text);white-space:pre-wrap;">{{ obj.message }}</div>
       </div>
     </div>
+
+    <!-- Admin Note -->
     <div class="card">
       <div class="card-header"><span class="card-title">Admin Note</span></div>
       <div class="card-body">
@@ -19,48 +42,81 @@
           {% csrf_token %}
           <input type="hidden" name="status" value="{{ obj.status }}"/>
           <textarea name="admin_note" class="form-control" rows="5"
-            placeholder="Internal notes about this enquiry…">{{ obj.admin_note }}</textarea>
+                    placeholder="Internal notes about this enquiry…">{{ obj.admin_note }}</textarea>
           <button type="submit" class="btn btn-primary" style="margin-top:12px;">
             <i class="fa-solid fa-floppy-disk"></i> Save Note
           </button>
         </form>
       </div>
     </div>
+
   </div>
+
+  <!-- Right: Sender Info + Status -->
   <div style="display:flex;flex-direction:column;gap:16px;">
+
+    <!-- Sender Info -->
     <div class="card">
       <div class="card-header"><span class="card-title">Sender Info</span></div>
-      <div class="card-body" style="display:flex;flex-direction:column;gap:12px;">
+      <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
+
         <div>
-          <div class="text-muted text-sm">Name</div>
+          <div class="text-muted text-sm">Full Name</div>
           <div style="font-weight:600;margin-top:3px;">{{ obj.name }}</div>
         </div>
+
         <div>
           <div class="text-muted text-sm">Email</div>
-          <a href="mailto:{{ obj.email }}" style="color:var(--accent);">{{ obj.email }}</a>
+          <a href="mailto:{{ obj.email }}"
+             style="color:var(--accent3);word-break:break-all;margin-top:3px;display:block;">
+            {{ obj.email }}
+          </a>
         </div>
-        {% if obj.phone %}
+
         <div>
           <div class="text-muted text-sm">Phone</div>
-          <div style="margin-top:3px;">{{ obj.phone }}</div>
+          <div style="margin-top:3px;">
+            {% if obj.phone %}
+            <a href="tel:{{ obj.phone }}" style="color:var(--accent3);">{{ obj.phone }}</a>
+            {% else %}
+            <span class="text-muted">—</span>
+            {% endif %}
+          </div>
         </div>
-        {% endif %}
-        {% if obj.company %}
+
         <div>
-          <div class="text-muted text-sm">Company</div>
-          <div style="margin-top:3px;">{{ obj.company }}</div>
+          <div class="text-muted text-sm">Terms & Conditions</div>
+          <div style="margin-top:4px;">
+            {% if obj.terms_accepted %}
+            <span class="badge badge-green">
+              <i class="fa-solid fa-circle-check" style="margin-right:4px;"></i> Accepted
+            </span>
+            {% else %}
+            <span class="badge badge-red">
+              <i class="fa-solid fa-circle-xmark" style="margin-right:4px;"></i> Not Accepted
+            </span>
+            {% endif %}
+          </div>
         </div>
-        {% endif %}
-        <div>
-          <div class="text-muted text-sm">Type</div>
-          <span class="badge badge-blue" style="margin-top:3px;">{{ obj.get_enquiry_type_display }}</span>
-        </div>
+
         <div>
           <div class="text-muted text-sm">Received</div>
-          <div style="margin-top:3px;">{{ obj.created_at|date:"d M Y, H:i" }}</div>
+          <div style="margin-top:3px;font-size:13px;">{{ obj.created_at|date:"d M Y, H:i" }}</div>
         </div>
+
+        {% if obj.ip_address %}
+        <div>
+          <div class="text-muted text-sm">IP Address</div>
+          <div style="margin-top:3px;font-size:12px;font-family:monospace;color:var(--muted);">
+            {{ obj.ip_address }}
+          </div>
+        </div>
+        {% endif %}
+
       </div>
     </div>
+
+    <!-- Update Status -->
     <div class="card">
       <div class="card-header"><span class="card-title">Update Status</span></div>
       <div class="card-body">
@@ -68,16 +124,48 @@
           {% csrf_token %}
           <textarea name="admin_note" style="display:none;">{{ obj.admin_note }}</textarea>
           <div style="display:flex;flex-direction:column;gap:8px;">
-            {% for val, label in obj.STATUS_CHOICES %}
-            <button type="submit" name="status" value="{{ val }}"
-              class="btn {% if obj.status == val %}btn-primary{% else %}btn-secondary{% endif %}">
-              {{ label }}
+
+            <button type="submit" name="status" value="new"
+                    class="btn {% if obj.status == 'new' %}btn-primary{% else %}btn-secondary{% endif %}">
+              🔴 New
             </button>
-            {% endfor %}
+
+            <button type="submit" name="status" value="read"
+                    class="btn {% if obj.status == 'read' %}btn-primary{% else %}btn-secondary{% endif %}">
+              🟠 Read
+            </button>
+
+            <button type="submit" name="status" value="replied"
+                    class="btn {% if obj.status == 'replied' %}btn-primary{% else %}btn-secondary{% endif %}">
+              🟢 Replied
+            </button>
+
+            <button type="submit" name="status" value="closed"
+                    class="btn {% if obj.status == 'closed' %}btn-primary{% else %}btn-secondary{% endif %}">
+              ⚫ Closed
+            </button>
+
           </div>
         </form>
       </div>
     </div>
+
+    <!-- Quick actions -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Quick Actions</span></div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:8px;">
+        <a href="mailto:{{ obj.email }}?subject=Re: {{ obj.subject|default:'Your Enquiry' }}"
+           class="btn btn-secondary" style="text-align:center;">
+          <i class="fa-solid fa-envelope"></i> Reply via Email
+        </a>
+        {% if obj.phone %}
+        <a href="tel:{{ obj.phone }}" class="btn btn-secondary" style="text-align:center;">
+          <i class="fa-solid fa-phone"></i> Call {{ obj.phone }}
+        </a>
+        {% endif %}
+      </div>
+    </div>
+
   </div>
 </div>
 {% endblock %}

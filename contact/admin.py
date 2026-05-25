@@ -15,10 +15,10 @@ class CareerAdmin(admin.ModelAdmin):
 
 @admin.register(Enquiry)
 class EnquiryAdmin(admin.ModelAdmin):
-    list_display  = ['name','email','enquiry_type','status','created_at']
-    list_filter   = ['status','enquiry_type']
-    search_fields = ['name','email','message']
-    readonly_fields = ['name','email','phone','company','subject','message','enquiry_type','ip_address','created_at','updated_at']
+    list_display  = ['name', 'email', 'phone', 'status', 'created_at']
+    list_filter   = ['status']
+    search_fields = ['name', 'email', 'phone', 'subject', 'message']
+    readonly_fields = ['name', 'email', 'phone', 'subject', 'message', 'terms_accepted', 'ip_address', 'created_at', 'updated_at']
     date_hierarchy = 'created_at'
     actions = ['mark_read','mark_replied','mark_closed']
     def mark_read(self, request, qs): qs.update(status=Enquiry.STATUS_READ)
