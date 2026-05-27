@@ -23,7 +23,7 @@ ALLOWED_HOSTS = os.environ.get(
 # Required for Django 4.0+ — fixes 403 CSRF error on api.kavalakat.com
 CSRF_TRUSTED_ORIGINS = os.environ.get(
     'CSRF_TRUSTED_ORIGINS',
-    'https://api.kavalakat.com,https://tan-rail-168119.hostingersite.com,https://kavalakat-content.vercel.app'
+    'https://api.kavalakat.com,https://tan-rail-168119.hostingersite.com'
 ).split(',')
 
 # ── Installed Apps ────────────────────────────────────────────────────────────
@@ -148,7 +148,7 @@ SIMPLE_JWT = {
 # ── CORS ──────────────────────────────────────────────────────────────────────
 CORS_ALLOWED_ORIGINS = os.environ.get(
     'CORS_ALLOWED_ORIGINS',
-    'http://localhost:3000,http://127.0.0.1:3000,https://tan-rail-168119.hostingersite.com,https://kavalakat-content.vercel.app'
+    'http://localhost:3000,http://127.0.0.1:3000,https://tan-rail-168119.hostingersite.com'
 ).split(',')
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_METHODS     = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
