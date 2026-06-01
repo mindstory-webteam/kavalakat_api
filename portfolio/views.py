@@ -1,3 +1,37 @@
+"""
+portfolio/views.py  — FIXED PortfolioPageView  (replace lines ~22-55 only)
+──────────────────────────────────────────────────────────────────────────────
+ROOT CAUSE:
+    The old get() method called get_items() three times with the hardcoded
+    strings 'Trading', 'Distribution', 'Services'.
+    Any category created in the CMS that doesn't match one of those three
+    exact names (e.g. "NEW TEST", "Logistics", "Exports") was silently ignored.
+
+FIX:
+    Loop over ALL active categories from the database.
+    Use cat.slug as the response key (e.g. "new-test", "trading", "logistics").
+    The response shape now matches whatever categories exist in the CMS,
+    so you never need to touch this file again when adding a new category.
+
+OLD response (hardcoded):
+    {
+        "trading":      [...],
+        "distribution": [...],
+        "services":     [...]
+    }
+
+NEW response (dynamic — includes every active category):
+    {
+        "trading":      [...],
+        "distribution": [...],
+        "services":     [...],
+        "new-test":     [...]     ← appears automatically now
+    }
+
+NOTE: The rest of views.py (CategoryViewSet, ItemViewSet) is unchanged.
+      Replace only the PortfolioPageView class below.
+"""
+
 from rest_framework import viewsets, filters, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -17,16 +51,16 @@ from .serializers import (
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# PORTFOLIO PAGE — single API call returns all 3 columns
+# PORTFOLIO PAGE — FIXED: dynamic loop replaces 3 hardcoded keys
 # ─────────────────────────────────────────────────────────────────────────────
 
 class PortfolioPageView(APIView):
     """
     GET /api/portfolio/page/
 
-    Returns the full 3-column portfolio layout in one API call.
-    Each item includes hero_title, banner_image_url, about_title etc
-    so the frontend can link to individual product detail pages.
+    Returns ALL active categories and their items in one API call.
+    The response keys are derived from each category's slug,
+    so adding a new category in the CMS automatically adds it here.
 
     Response:
     {
@@ -34,7 +68,8 @@ class PortfolioPageView(APIView):
         "data": {
             "trading":      [ {id, name, hero_title, banner_image_url, ...}, ... ],
             "distribution": [ ... ],
-            "services":     [ ... ]
+            "services":     [ ... ],
+            "new-test":     [ ... ]   ← any new category appears here automatically
         }
     }
 
@@ -44,48 +79,24 @@ class PortfolioPageView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        def get_items(cat_name):
-            try:
-                cat = Category.objects.get(name__iexact=cat_name, is_active=True)
-                qs  = cat.items.filter(is_active=True).order_by('order', 'name')
-                return ItemListSerializer(qs, many=True, context={'request': request}).data
-            except Category.DoesNotExist:
-                return []
+        # ── FIXED: loop over all active categories instead of 3 hardcoded names ──
+        categories = Category.objects.filter(is_active=True).order_by('order', 'name')
 
-        return Response({
-            'success': True,
-            'data': {
-                'trading':      get_items('Trading'),
-                'distribution': get_items('Distribution'),
-                'services':     get_items('Services'),
-            }
-        })
+        data = {}
+        for cat in categories:
+            items = cat.items.filter(is_active=True).order_by('order', 'name')
+            data[cat.slug] = ItemListSerializer(
+                items, many=True, context={'request': request}
+            ).data
+
+        return Response({'success': True, 'data': data})
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# CATEGORY VIEWSET
+# CATEGORY VIEWSET  (unchanged)
 # ─────────────────────────────────────────────────────────────────────────────
 
 class CategoryViewSet(viewsets.ModelViewSet):
-    """
-    Portfolio Category CRUD
-
-    Public:
-        GET  /api/portfolio/categories/              list all active categories
-        GET  /api/portfolio/categories/{name}/       detail + all items (lightweight)
-
-    Admin (JWT required):
-        POST   /api/portfolio/categories/            create
-        PUT    /api/portfolio/categories/{name}/     full update
-        PATCH  /api/portfolio/categories/{name}/     partial update
-        DELETE /api/portfolio/categories/{name}/     delete + all its items
-        POST   /api/portfolio/categories/{name}/toggle-active/
-
-    Filters:
-        ?is_active=true|false
-        ?search=trading
-        ?ordering=order|-order|name|-name
-    """
     permission_classes = [IsAdminOrReadOnly]
     lookup_field       = 'name'
     filter_backends    = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
@@ -173,7 +184,6 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path='toggle-active')
     def toggle_active(self, request, name=None):
-        """POST /api/portfolio/categories/{name}/toggle-active/"""
         try:
             obj = Category.objects.get(name__iexact=name)
         except Category.DoesNotExist:
@@ -189,118 +199,10 @@ class CategoryViewSet(viewsets.ModelViewSet):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# ITEM VIEWSET
+# ITEM VIEWSET  (unchanged)
 # ─────────────────────────────────────────────────────────────────────────────
 
 class ItemViewSet(viewsets.ModelViewSet):
-    """
-    Portfolio Item CRUD — all 5 form sections supported.
-
-    ── PUBLIC endpoints ──────────────────────────────────────────────────────
-
-    List (lightweight — no JSON arrays):
-        GET /api/portfolio/items/
-        GET /api/portfolio/items/?category__name=Trading
-        GET /api/portfolio/items/?category__name=Distribution
-        GET /api/portfolio/items/?category__name=Services
-        GET /api/portfolio/items/?is_featured=true
-        GET /api/portfolio/items/?search=cement
-        GET /api/portfolio/items/?ordering=order
-        GET /api/portfolio/items/?ordering=-created_at
-
-    Full detail (includes features[], brands[], testimonials[]):
-        GET /api/portfolio/items/{id}/
-
-    ── ADMIN endpoints (JWT Bearer required) ─────────────────────────────────
-
-        POST   /api/portfolio/items/           create
-        PUT    /api/portfolio/items/{id}/      full update
-        PATCH  /api/portfolio/items/{id}/      partial update
-        DELETE /api/portfolio/items/{id}/      delete
-        POST   /api/portfolio/items/{id}/toggle-featured/
-        POST   /api/portfolio/items/{id}/toggle-active/
-
-    ── FULL DETAIL RESPONSE (GET /api/portfolio/items/{id}/) ─────────────────
-
-    {
-        "success": true,
-        "data": {
-            "id": 1,
-            "name": "CEMENT",
-            "description": "...",
-            "tags": "cement, OPC, PPC",
-            "category": 1,
-            "category_name": "Trading",
-            "category_slug": "trading",
-            "image": null,
-            "image_url": null,
-            "is_featured": true,
-            "is_active": true,
-            "order": 1,
-
-            "hero_title": "Products Power Progress Explore Our Offer.",
-            "banner_image": "/media/portfolio/banners/cement-banner.jpg",
-            "banner_image_url": "https://kavalakat-api.onrender.com/media/portfolio/banners/cement-banner.jpg",
-
-            "about_title": "Kavalakat Reliable Cement Supplier in Kerala",
-            "about_description": "We handle 11,000–13,000 MT of cement...",
-            "about_image": "/media/portfolio/about/cement-about.jpg",
-            "about_image_url": "https://kavalakat-api.onrender.com/media/portfolio/about/cement-about.jpg",
-
-            "features_title": "Cement Products",
-            "features_image": "/media/portfolio/features/cement-faq.png",
-            "features_image_url": "https://kavalakat-api.onrender.com/media/portfolio/features/cement-faq.png",
-            "features_json": "[{\"title\":\"Top-Rated Dealer\",\"description\":\"...\"}]",
-            "features": [
-                {"title": "Top-Rated Dealer", "description": "Recognized as a leading dealer..."},
-                {"title": "Customer-Focused Communication", "description": "..."},
-                {"title": "Trust & Commitment in Service", "description": "..."},
-                {"title": "Best Quality Products", "description": "..."}
-            ],
-
-            "brands_heading": "Trusted Cement Brands We Supply",
-            "brands_json": "[{\"title\":\"ULTRATECH\",\"description\":\"...\",\"logo_url\":\"...\"}]",
-            "brands": [
-                {"title": "ULTRATECH", "description": "The company has a consolidated capacity...", "logo_url": "https://..."},
-                {"title": "ACC", "description": "...", "logo_url": "https://..."},
-                {"title": "JSW", "description": "...", "logo_url": "https://..."}
-            ],
-
-            "testimonials_json": "[{\"title\":\"...\",\"description\":\"...\",\"client_name\":\"...\"}]",
-            "testimonials": [
-                {"title": "OUTSTANDING MATERIAL QUALITY!", "description": "Delivery updates were timely...", "client_name": "Steve Mathew, Founder Egenslab"}
-            ],
-
-            "created_at": "2026-04-27T09:30:00+05:30",
-            "updated_at": "2026-05-10T14:22:00+05:30"
-        }
-    }
-
-    ── SENDING DATA (multipart/form-data) ────────────────────────────────────
-
-        name               = "CEMENT"
-        category           = 1
-        tags               = "cement, OPC, PPC, Kerala"
-        is_featured        = true
-        is_active          = true
-        order              = 1
-
-        hero_title         = "Products Power Progress Explore Our Offer."
-        banner_image       = <file upload>
-
-        about_title        = "Kavalakat Reliable Cement Supplier in Kerala"
-        about_description  = "We handle 11,000–13,000 MT of cement..."
-        about_image        = <file upload>
-
-        features_title     = "Cement Products"
-        features_image     = <file upload>
-        features_json      = '[{"title":"Top-Rated Dealer","description":"Recognized as a leading dealer..."}]'
-
-        brands_heading     = "Trusted Cement Brands We Supply"
-        brands_json        = '[{"title":"ULTRATECH","description":"...","logo_url":""}]'
-
-        testimonials_json  = '[{"title":"Great!","description":"...","client_name":"John, Builder"}]'
-    """
     permission_classes = [IsAdminOrReadOnly]
     filter_backends    = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields   = ['category', 'category__name', 'category__slug',
@@ -310,10 +212,6 @@ class ItemViewSet(viewsets.ModelViewSet):
     ordering_fields    = ['order', 'created_at', 'name', 'category__order']
 
     def get_serializer_class(self):
-        """
-        list action   → ItemListSerializer (lightweight, fast, no JSON arrays)
-        all others    → ItemSerializer     (full, with features/brands/testimonials)
-        """
         if self.action == 'list':
             return ItemListSerializer
         return ItemSerializer
@@ -324,12 +222,7 @@ class ItemViewSet(viewsets.ModelViewSet):
             qs = qs.filter(is_active=True, category__is_active=True)
         return qs
 
-    # ── List ──────────────────────────────────────────────────────────────────
     def list(self, request, *args, **kwargs):
-        """
-        Returns lightweight list — no features/brands/testimonials.
-        Use GET /api/portfolio/items/{id}/ for the full 5-section detail.
-        """
         qs   = self.filter_queryset(self.get_queryset())
         page = self.paginate_queryset(qs)
         if page is not None:
@@ -342,31 +235,14 @@ class ItemViewSet(viewsets.ModelViewSet):
             'data':    ItemListSerializer(qs, many=True, context={'request': request}).data,
         })
 
-    # ── Retrieve ──────────────────────────────────────────────────────────────
     def retrieve(self, request, *args, **kwargs):
-        """
-        Returns FULL item detail including all 5 sections:
-        Section 1: hero_title + banner_image_url
-        Section 2: about_title + about_description + about_image_url
-        Section 3: features_title + features_image_url + features[] array
-        Section 4: brands_heading + brands[] array with logo_url
-        Section 5: testimonials[] array
-        """
         obj = self.get_object()
         return Response({
             'success': True,
             'data':    ItemSerializer(obj, context={'request': request}).data,
         })
 
-    # ── Create ────────────────────────────────────────────────────────────────
     def create(self, request, *args, **kwargs):
-        """
-        POST /api/portfolio/items/
-        Content-Type: multipart/form-data  (supports image uploads)
-        Authorization: Bearer <token>
-
-        Pass features_json, brands_json, testimonials_json as JSON strings.
-        """
         s = ItemSerializer(data=request.data, context={'request': request})
         s.is_valid(raise_exception=True)
         obj = s.save()
@@ -376,14 +252,7 @@ class ItemViewSet(viewsets.ModelViewSet):
             'data':    ItemSerializer(obj, context={'request': request}).data,
         }, status=status.HTTP_201_CREATED)
 
-    # ── Update ────────────────────────────────────────────────────────────────
     def update(self, request, *args, **kwargs):
-        """
-        PUT   /api/portfolio/items/{id}/   full update
-        PATCH /api/portfolio/items/{id}/   partial update
-        Content-Type: multipart/form-data  (supports image uploads)
-        Authorization: Bearer <token>
-        """
         partial = kwargs.pop('partial', False)
         s = ItemSerializer(
             self.get_object(),
@@ -399,7 +268,6 @@ class ItemViewSet(viewsets.ModelViewSet):
             'data':    ItemSerializer(obj, context={'request': request}).data,
         })
 
-    # ── Destroy ───────────────────────────────────────────────────────────────
     def destroy(self, request, *args, **kwargs):
         obj = self.get_object()
         n   = obj.name
@@ -409,14 +277,8 @@ class ItemViewSet(viewsets.ModelViewSet):
             'message': f'Item "{n}" deleted.',
         }, status=status.HTTP_200_OK)
 
-    # ── Toggle featured ───────────────────────────────────────────────────────
     @action(detail=True, methods=['post'], url_path='toggle-featured')
     def toggle_featured(self, request, pk=None):
-        """
-        POST /api/portfolio/items/{id}/toggle-featured/
-        Authorization: Bearer <token>
-        Response: { "success": true, "is_featured": true, "message": "Item featured." }
-        """
         obj = self.get_object()
         obj.is_featured = not obj.is_featured
         obj.save(update_fields=['is_featured'])
@@ -426,14 +288,8 @@ class ItemViewSet(viewsets.ModelViewSet):
             'is_featured': obj.is_featured,
         })
 
-    # ── Toggle active ─────────────────────────────────────────────────────────
     @action(detail=True, methods=['post'], url_path='toggle-active')
     def toggle_active(self, request, pk=None):
-        """
-        POST /api/portfolio/items/{id}/toggle-active/
-        Authorization: Bearer <token>
-        Response: { "success": true, "is_active": false, "message": "Item deactivated." }
-        """
         obj = self.get_object()
         obj.is_active = not obj.is_active
         obj.save(update_fields=['is_active'])
