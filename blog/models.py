@@ -24,6 +24,13 @@ class Post(models.Model):
     slug             = models.SlugField(unique=True, max_length=255, blank=True)
     content          = models.TextField()
     excerpt          = models.TextField(blank=True)
+    # ── New: raw HTML block appended after the main content ──────────────
+    bottom_html      = models.TextField(
+        blank=True,
+        verbose_name='Bottom HTML Section',
+        help_text='Raw HTML injected at the bottom of the post (embeds, CTAs, widgets, etc.)'
+    )
+    # ─────────────────────────────────────────────────────────────────────
     image            = models.ImageField(upload_to='blog/posts/', blank=True, null=True)
     category         = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, related_name='posts')
     author           = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='blog_posts')

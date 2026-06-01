@@ -17,9 +17,11 @@ class PostListSerializer(serializers.ModelSerializer):
     image_url     = serializers.SerializerMethodField()
     class Meta:
         model  = Post
-        fields = ['id','title','slug','excerpt','image','image_url','category','category_name',
-                  'category_slug','author','author_name','status','tags','is_featured',
-                  'is_ai_generated','views','created_at','published_at']
+        fields = [
+            'id','title','slug','excerpt','image','image_url','category','category_name',
+            'category_slug','author','author_name','status','tags','is_featured',
+            'is_ai_generated','views','created_at','published_at',
+        ]
         read_only_fields = ['id','slug','views','created_at','updated_at']
     def get_author_name(self, obj):
         return (obj.author.get_full_name() or obj.author.username) if obj.author else None
@@ -28,14 +30,23 @@ class PostListSerializer(serializers.ModelSerializer):
         return req.build_absolute_uri(obj.image.url) if obj.image and req else None
 
 class PostDetailSerializer(PostListSerializer):
+    """Full post detail — includes main content, SEO fields, and the bottom HTML section."""
     class Meta(PostListSerializer.Meta):
-        fields = PostListSerializer.Meta.fields + ['content','meta_title','meta_description','updated_at']
+        fields = PostListSerializer.Meta.fields + [
+            'content', 'bottom_html',
+            'meta_title', 'meta_description', 'updated_at',
+        ]
 
 class PostWriteSerializer(serializers.ModelSerializer):
+    """Writable serializer used for POST / PUT / PATCH."""
     class Meta:
         model  = Post
-        fields = ['title','content','excerpt','image','category','author','status','tags',
-                  'is_featured','meta_title','meta_description','published_at']
+        fields = [
+            'title','content','excerpt','bottom_html','image',
+            'category','author','status','tags','is_featured',
+            'meta_title','meta_description','published_at',
+        ]
     def validate_title(self, v):
-        if len(v.strip()) < 5: raise serializers.ValidationError('Title must be at least 5 characters.')
+        if len(v.strip()) < 5:
+            raise serializers.ValidationError('Title must be at least 5 characters.')
         return v.strip()

@@ -9,8 +9,9 @@
   {% csrf_token %}
   <div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;">
 
-    <!-- Main Content -->
+    <!-- ── Main Content ─────────────────────────────────────────────────── -->
     <div style="display:flex;flex-direction:column;gap:16px;">
+
       <div class="card">
         <div class="card-header"><span class="card-title">Post Content</span></div>
         <div class="card-body">
@@ -32,6 +33,43 @@
         </div>
       </div>
 
+      <!-- ── Bottom HTML Section ──────────────────────────────────────────── -->
+      <div class="card">
+        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
+          <span class="card-title">Bottom HTML Section</span>
+          <span class="badge badge-blue" style="font-size:11px;font-weight:500;">
+            <i class="fa-solid fa-code" style="margin-right:4px;"></i>Raw HTML
+          </span>
+        </div>
+        <div class="card-body">
+          <p class="text-muted text-sm" style="margin-bottom:12px;line-height:1.6;">
+            This HTML block is injected <strong>below the main post content</strong> on the public post page.
+            Use it for embeds, call-to-action banners, related product tables, download buttons, YouTube videos, etc.
+          </p>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">HTML Code</label>
+            <textarea name="bottom_html"
+              class="form-control"
+              rows="12"
+              placeholder="<!-- Paste any HTML here, e.g. -->&#10;<div class=&quot;cta-banner&quot;>&#10;  <h3>Download our Product Catalogue</h3>&#10;  <a href=&quot;/catalogue.pdf&quot; class=&quot;btn&quot;>Download PDF</a>&#10;</div>"
+              style="font-family: 'Courier New', monospace; font-size: 13px; resize: vertical;"
+              spellcheck="false">{{ obj.bottom_html|default:'' }}</textarea>
+          </div>
+          {% if obj.bottom_html %}
+          <div style="margin-top:12px;padding:12px;background:var(--color-bg-subtle, #f8f9fa);border-radius:8px;border:1px solid var(--color-border, #e5e7eb);">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
+              <i class="fa-solid fa-eye text-muted" style="font-size:12px;"></i>
+              <span class="text-muted text-sm" style="font-weight:600;">Live Preview</span>
+            </div>
+            <div class="bottom-html-preview">
+              {{ obj.bottom_html|safe }}
+            </div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+      <!-- ──────────────────────────────────────────────────────────────────── -->
+
       <div class="card">
         <div class="card-header"><span class="card-title">SEO</span></div>
         <div class="card-body">
@@ -47,9 +85,10 @@
           </div>
         </div>
       </div>
+
     </div>
 
-    <!-- Sidebar -->
+    <!-- ── Sidebar ───────────────────────────────────────────────────────── -->
     <div style="display:flex;flex-direction:column;gap:16px;">
       <div class="card">
         <div class="card-header"><span class="card-title">Publish</span></div>
@@ -104,7 +143,26 @@
           <input type="file" name="image" class="form-control" accept="image/*"/>
         </div>
       </div>
+
+      <!-- Quick-help card for the bottom HTML section -->
+      <div class="card" style="border-left:3px solid var(--color-primary, #3b82f6);">
+        <div class="card-body" style="padding:14px;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <i class="fa-solid fa-lightbulb" style="color:var(--color-primary,#3b82f6);"></i>
+            <span style="font-weight:600;font-size:13px;">Bottom HTML Tips</span>
+          </div>
+          <ul class="text-muted text-sm" style="padding-left:16px;margin:0;line-height:1.8;">
+            <li>YouTube / Vimeo embeds</li>
+            <li>Download buttons or PDF links</li>
+            <li>Product tables or pricing cards</li>
+            <li>Newsletter signup forms</li>
+            <li>Social share widgets</li>
+            <li>Related links or banners</li>
+          </ul>
+        </div>
+      </div>
     </div>
+
   </div>
 </form>
 {% endblock %}
