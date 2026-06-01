@@ -13,23 +13,52 @@ class APIRootView(APIView):
             'success': True,
             'message': 'Kavalakat API v2',
             'endpoints': {
-                'auth':            f'{base}auth/token/',
-                'pages':           f'{base}pages/',
-                'about':           f'{base}about/',
-                'strengths':       f'{base}strengths/',
-                'milestones':      f'{base}milestones/',
-                'projects':        f'{base}projects/',
-                'gallery':         f'{base}gallery/',
-                'portfolio':       f'{base}portfolio/',
-                'portfolio_items': f'{base}portfolio-items/',
-                'blog':            f'{base}blog/',
-                'blog_categories': f'{base}blog/categories/',
-                'contact':         f'{base}contact/',
-                'careers':         f'{base}careers/',
-                'enquiry':         f'{base}enquiry/',
-                'ai_generate':     f'{base}ai/generate-blog/',
-                'ai_logs':         f'{base}ai/logs/',
-                'health':          f'{base}health/',
+                # ── Auth ──────────────────────────────────────
+                'auth_token':         f'{base}auth/token/',
+                'auth_refresh':       f'{base}auth/token/refresh/',
+                'auth_verify':        f'{base}auth/token/verify/',
+
+                # ── Pages ─────────────────────────────────────
+                'pages':              f'{base}pages/',
+
+                # ── About ─────────────────────────────────────
+                'about':              f'{base}about/',
+                'strengths':          f'{base}strengths/',
+                'milestones':         f'{base}milestones/',
+                'projects':           f'{base}projects/',
+                'gallery':            f'{base}gallery/',
+                'team':               f'{base}team/',
+
+                # ── Portfolio ─────────────────────────────────
+                'portfolio_page':     f'{base}portfolio/page/',
+                'portfolio_categories': f'{base}portfolio/categories/',
+                'portfolio_items':    f'{base}portfolio/items/',
+
+                # ── Services ──────────────────────────────────
+                'services':           f'{base}services/',
+                'service_categories': f'{base}services/categories/',
+
+                # ── Blog ──────────────────────────────────────
+                'blog':               f'{base}blog/',
+                'blog_categories':    f'{base}blog/categories/',
+
+                # ── Contact & Enquiries ───────────────────────
+                'contact':            f'{base}contact/',
+                'enquiry':            f'{base}enquiry/',
+                'careers':            f'{base}careers/',
+
+                # ── AI ────────────────────────────────────────
+                'ai_generate_blog':   f'{base}ai/generate-blog/',
+                'ai_logs':            f'{base}ai/logs/',
+
+                # ── Chatbot ───────────────────────────────────
+                'chat':               f'{base}chat/',
+                'chat_sessions':      f'{base}chat/sessions/',
+
+                # ── Docs & Health ─────────────────────────────
+                'docs_swagger':       f'{base}docs/',
+                'docs_redoc':         f'{base}docs/redoc/',
+                'health':             f'{base}health/',
             },
         })
 
@@ -44,5 +73,9 @@ class HealthCheckView(APIView):
             db = 'ok'
         except Exception:
             db = 'error'
-        return Response({'success': True, 'status': 'healthy', 'database': db,
-                         'timestamp': timezone.now().isoformat()})
+        return Response({
+            'success':   True,
+            'status':    'healthy',
+            'database':  db,
+            'timestamp': timezone.now().isoformat(),
+        })
