@@ -1,18 +1,18 @@
 """
 chat/views.py
-POST /api/chat/          → send a message, get Claude reply
-GET  /api/chat/sessions/ → admin list of all sessions (staff only)
-GET  /api/chat/sessions/<session_key>/  → fetch one session's history
+POST /api/chat/              → send message, get reply
+GET  /api/chat/sessions/     → admin: list all sessions
+GET  /api/chat/sessions/<key>/ → admin: view one session
 """
 import logging
-from rest_framework.views    import APIView
-from rest_framework.response import Response
-from rest_framework          import viewsets, status
+from rest_framework.views       import APIView
+from rest_framework.response    import Response
+from rest_framework             import viewsets, status
 from rest_framework.permissions import AllowAny, IsAdminUser
 
-from .models       import ChatSession, ChatMessage
-from .serializers  import MessageInputSerializer, ChatSessionSerializer
-from .services     import chat_with_claude
+from .models      import ChatSession, ChatMessage
+from .serializers import MessageInputSerializer, ChatSessionSerializer
+from .engine      import get_reply
 
 logger = logging.getLogger('chat')
 
@@ -20,7 +20,7 @@ logger = logging.getLogger('chat')
 class ChatView(APIView):
     """
     POST /api/chat/
-    Body: { "session_key": "<uuid>", "message": "hello" }
+    Body:    { "session_key": "<uuid>", "message": "hello" }
     Returns: { "success": true, "message": "<reply>", "session_key": "..." }
     """
     permission_classes = [AllowAny]
@@ -32,43 +32,40 @@ class ChatView(APIView):
         session_key = inp.validated_data['session_key']
         user_text   = inp.validated_data['message']
 
-        # ── Get or create session ────────────────────────────────────────────
+        # Get or create session
         session, _ = ChatSession.objects.get_or_create(session_key=session_key)
 
-        # ── Save user message ────────────────────────────────────────────────
+        # Save user message
         ChatMessage.objects.create(
             session = session,
             role    = ChatMessage.ROLE_USER,
             content = user_text,
         )
 
-        # ── Build history for Claude ─────────────────────────────────────────
+        # Build history (last 10 turns for context)
         history = list(
             session.messages
             .order_by('created_at')
             .values('role', 'content')
-        )
-        # last message is the one we just saved — include it
-        claude_messages = [{'role': m['role'], 'content': m['content']} for m in history]
+        )[-10:]
 
-        # ── Call Claude ──────────────────────────────────────────────────────
+        # Get reply from engine (no external API)
         try:
-            reply = chat_with_claude(claude_messages)
-        except (ValueError, RuntimeError) as exc:
-            logger.error('Chat error for session %s: %s', session_key, exc)
+            reply = get_reply(user_text, history=history)
+        except Exception as exc:
+            logger.error('Chat engine error for session %s: %s', session_key, exc)
             reply = (
-                "Sorry, I'm having a little trouble right now. 😔 "
-                "Please try again in a moment, or contact us directly!"
+                "Sorry, I had a small hiccup! 😔 "
+                "Please try again or contact us directly."
             )
 
-        # ── Save assistant reply ─────────────────────────────────────────────
+        # Save assistant reply
         ChatMessage.objects.create(
             session = session,
             role    = ChatMessage.ROLE_ASSISTANT,
             content = reply,
         )
 
-        # ── Touch session timestamp ──────────────────────────────────────────
         session.save(update_fields=['updated_at'])
 
         return Response({
@@ -80,9 +77,9 @@ class ChatView(APIView):
 
 class ChatSessionViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    Admin-only: view all chat sessions + their messages.
+    Admin only — view all sessions and messages.
     GET /api/chat/sessions/
-    GET /api/chat/sessions/<pk>/
+    GET /api/chat/sessions/<session_key>/
     """
     serializer_class   = ChatSessionSerializer
     permission_classes = [IsAdminUser]
@@ -99,7 +96,9 @@ class ChatSessionViewSet(viewsets.ReadOnlyModelViewSet):
         qs   = self.get_queryset()
         page = self.paginate_queryset(qs)
         if page is not None:
-            return self.get_paginated_response(self.get_serializer(page, many=True).data)
+            return self.get_paginated_response(
+                self.get_serializer(page, many=True).data
+            )
         return Response({
             'success': True,
             'count'  : qs.count(),

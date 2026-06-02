@@ -6,18 +6,17 @@ from .models import ChatSession, ChatMessage
 
 
 class MessageInputSerializer(serializers.Serializer):
-    """Incoming payload from the React widget."""
-    session_key = serializers.CharField(max_length=100)
+    session_key = serializers.CharField(max_length=120)
     message     = serializers.CharField(max_length=2000)
 
     def validate_message(self, value):
         value = value.strip()
-        if len(value) < 1:
+        if not value:
             raise serializers.ValidationError('Message cannot be empty.')
         return value
 
     def validate_session_key(self, value):
-        return value.strip()[:100]
+        return value.strip()[:120]
 
 
 class ChatMessageSerializer(serializers.ModelSerializer):
@@ -27,8 +26,12 @@ class ChatMessageSerializer(serializers.ModelSerializer):
 
 
 class ChatSessionSerializer(serializers.ModelSerializer):
-    messages = ChatMessageSerializer(many=True, read_only=True)
+    messages      = ChatMessageSerializer(many=True, read_only=True)
+    message_count = serializers.SerializerMethodField()
 
     class Meta:
         model  = ChatSession
-        fields = ['id', 'session_key', 'created_at', 'updated_at', 'messages']
+        fields = ['id', 'session_key', 'message_count', 'created_at', 'updated_at', 'messages']
+
+    def get_message_count(self, obj):
+        return obj.messages.count()
