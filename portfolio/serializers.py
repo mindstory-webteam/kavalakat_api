@@ -68,9 +68,7 @@ class ItemSerializer(serializers.ModelSerializer):
         try:
             parsed = json.loads(value)
             if not isinstance(parsed, list):
-                raise serializers.ValidationError(
-                    f'{field_name} must be a JSON array.'
-                )
+                raise serializers.ValidationError(f'{field_name} must be a JSON array.')
             return value
         except json.JSONDecodeError:
             raise serializers.ValidationError(f'{field_name} must be valid JSON.')
@@ -80,12 +78,10 @@ class ItemSerializer(serializers.ModelSerializer):
     def validate_testimonials_json(self, value): return self._validate_json_list(value, 'testimonials_json')
 
 
-# ── FIXED: ItemListSerializer now includes ALL fields ──────────────────────────
 class ItemListSerializer(serializers.ModelSerializer):
     """
     Used for list views AND /api/portfolio/page/.
-    NOW includes: about_description, features, brands, testimonials
-    so the frontend gets everything in one call.
+    Includes all sections so the frontend gets everything in one call.
     """
     category_name      = serializers.CharField(source='category.name', read_only=True)
     category_slug      = serializers.CharField(source='category.slug', read_only=True)
@@ -102,15 +98,10 @@ class ItemListSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'description', 'image', 'image_url', 'tags',
             'category', 'category_name', 'category_slug',
-            # Section 1 — Hero
             'hero_title', 'banner_image', 'banner_image_url',
-            # Section 2 — About  ← FIXED: about_description now included
             'about_title', 'about_description', 'about_image', 'about_image_url',
-            # Section 3 — Features  ← FIXED: features array now included
             'features_title', 'features_image', 'features_image_url', 'features',
-            # Section 4 — Brands  ← FIXED: brands array now included
             'brands_heading', 'brands',
-            # Section 5 — Testimonials  ← FIXED: testimonials array now included
             'testimonials',
             'is_featured', 'is_active', 'order',
             'created_at', 'updated_at',
@@ -165,9 +156,3 @@ class CategoryListSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'slug', 'description', 'icon', 'order',
                   'is_active', 'item_count']
         read_only_fields = ['id', 'slug']
-
-
-class PortfolioPageSerializer(serializers.Serializer):
-    trading      = ItemListSerializer(many=True)
-    distribution = ItemListSerializer(many=True)
-    services     = ItemListSerializer(many=True)
