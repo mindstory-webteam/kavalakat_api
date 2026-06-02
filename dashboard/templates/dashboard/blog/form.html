@@ -5,82 +5,170 @@
   </a>
 {% endblock %}
 {% block content %}
-<form method="post" enctype="multipart/form-data">
+<style>
+.bf-grid{display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start;}
+.bf-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px;}
+.bf-card-head{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.bf-card-head span{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--muted);}
+.bf-card-head i{font-size:12px;color:var(--accent);}
+.bf-body{padding:20px;}
+.bf-row{margin-bottom:16px;}
+.bf-row:last-child{margin-bottom:0;}
+.bf-label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);margin-bottom:7px;}
+.bf-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:14px;font-family:var(--font-body);transition:border-color .15s;}
+.bf-input:focus{outline:none;border-color:var(--accent);}
+.bf-textarea{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:14px;font-family:monospace;resize:vertical;transition:border-color .15s;line-height:1.6;}
+.bf-textarea:focus{outline:none;border-color:var(--accent);}
+.bf-select{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;color:var(--text);font-size:14px;font-family:var(--font-body);}
+.bf-select:focus{outline:none;border-color:var(--accent);}
+/* Toggle */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid var(--border);}
+.toggle-row:last-child{border-bottom:none;padding-bottom:0;}
+.toggle-label{font-size:13px;font-weight:500;color:var(--text);}
+.toggle-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.toggle-switch{position:relative;width:40px;height:22px;flex-shrink:0;}
+.toggle-switch input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;background:var(--border);border-radius:11px;cursor:pointer;transition:.2s;}
+.toggle-slider:before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s;}
+.toggle-switch input:checked+.toggle-slider{background:var(--accent);}
+.toggle-switch input:checked+.toggle-slider:before{transform:translateX(18px);}
+/* Image upload */
+.img-upload-box{border:2px dashed var(--border);border-radius:10px;padding:24px 16px;text-align:center;cursor:pointer;transition:border-color .15s;position:relative;overflow:hidden;}
+.img-upload-box:hover{border-color:var(--accent);}
+.img-upload-box input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.img-upload-icon{font-size:20px;color:var(--muted);margin-bottom:6px;}
+.img-upload-text{font-size:12px;color:var(--muted);}
+.img-upload-text strong{color:var(--accent);}
+.img-preview{width:100%;border-radius:8px;display:block;}
+/* Tags */
+.tags-wrap{display:flex;flex-wrap:wrap;gap:6px;min-height:28px;}
+.tag-pill{display:inline-flex;align-items:center;gap:5px;background:rgba(1,96,178,.1);border:1px solid rgba(1,96,178,.2);color:var(--accent);border-radius:20px;padding:3px 10px;font-size:11px;font-weight:600;}
+.tag-pill button{background:none;border:none;color:var(--accent);cursor:pointer;padding:0;font-size:11px;line-height:1;}
+.tag-add-row{display:flex;gap:8px;margin-top:8px;}
+.tag-add-row input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;color:var(--text);font-size:13px;font-family:var(--font-body);}
+.tag-add-row input:focus{outline:none;border-color:var(--accent);}
+/* Buttons */
+.publish-btn{width:100%;background:var(--accent);color:#fff;border:none;border-radius:10px;padding:13px;font-size:14px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s;font-family:var(--font-head);}
+.publish-btn:hover{background:var(--accent2);}
+.draft-btn{width:100%;background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:10px;padding:11px;font-size:13px;font-weight:600;cursor:pointer;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px;transition:border-color .15s;}
+.draft-btn:hover{border-color:var(--accent);color:var(--accent);}
+.delete-btn{width:100%;background:rgba(239,68,68,.08);color:#ef4444;border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:11px;font-size:13px;font-weight:600;cursor:pointer;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:8px;transition:background .15s;text-decoration:none;}
+.delete-btn:hover{background:rgba(239,68,68,.18);}
+/* Bottom HTML preview badge */
+.html-hint{font-size:11px;color:var(--muted);margin-top:6px;display:flex;align-items:center;gap:5px;}
+</style>
+
+<form method="post" enctype="multipart/form-data" id="blogForm">
   {% csrf_token %}
-  <div style="display:grid;grid-template-columns:1fr 340px;gap:20px;align-items:start;">
+  <input type="hidden" name="status" id="statusInput" value="{{ obj.status|default:'draft' }}"/>
+  <input type="hidden" name="tags"   id="tagsInput"   value="{{ obj.tags|default:'' }}"/>
 
-    <!-- ── Main Content ─────────────────────────────────────────────────── -->
-    <div style="display:flex;flex-direction:column;gap:16px;">
+  <div class="bf-grid">
 
-      <div class="card">
-        <div class="card-header"><span class="card-title">Post Content</span></div>
-        <div class="card-body">
-          <div class="form-group">
-            <label class="form-label">Title *</label>
-            <input type="text" name="title" class="form-control"
-              value="{{ obj.title|default:'' }}" placeholder="Post title…" required/>
+    <!-- ── LEFT ──────────────────────────────────────────────── -->
+    <div>
+
+      <!-- Content -->
+      <div class="bf-card">
+        <div class="bf-card-head"><i class="fa-solid fa-pen-nib"></i><span>Content</span></div>
+        <div class="bf-body">
+          <div class="bf-row">
+            <label class="bf-label">Title *</label>
+            <input type="text" name="title" class="bf-input"
+              value="{{ obj.title|default:'' }}" placeholder="Enter blog title…" required/>
           </div>
-          <div class="form-group">
-            <label class="form-label">Excerpt</label>
-            <textarea name="excerpt" class="form-control" rows="3"
-              placeholder="Short summary (shown in listings)…">{{ obj.excerpt|default:'' }}</textarea>
+          <div class="bf-row">
+            <label class="bf-label">Short Description</label>
+            <textarea name="excerpt" class="bf-textarea" rows="3"
+              placeholder="Short excerpt shown in listings…">{{ obj.excerpt|default:'' }}</textarea>
           </div>
-          <div class="form-group">
-            <label class="form-label">Content *</label>
-            <textarea name="content" class="form-control" rows="16"
-              placeholder="Write post content in Markdown or HTML…" required>{{ obj.content|default:'' }}</textarea>
+          <div class="bf-row">
+            <label class="bf-label">Full Body *</label>
+            <textarea name="content" class="bf-textarea" rows="16"
+              placeholder="Full article content…" required>{{ obj.content|default:'' }}</textarea>
+            <div class="html-hint"><i class="fa-solid fa-circle-info"></i> Supports Markdown or plain HTML.</div>
           </div>
         </div>
       </div>
 
-      <!-- ── Bottom HTML Section ──────────────────────────────────────────── -->
-      <div class="card">
-        <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;">
-          <span class="card-title">Bottom HTML Section</span>
-          <span class="badge badge-blue" style="font-size:11px;font-weight:500;">
-            <i class="fa-solid fa-code" style="margin-right:4px;"></i>Raw HTML
-          </span>
+      <!-- Bottom HTML — THE FIXED SECTION -->
+      <div class="bf-card">
+        <div class="bf-card-head">
+          <i class="fa-solid fa-code"></i>
+          <span>Bottom HTML Section</span>
+          <span style="margin-left:auto;font-size:10px;background:rgba(1,96,178,.12);color:var(--accent);
+            padding:2px 8px;border-radius:4px;font-weight:700;">&lt;/&gt; Raw HTML</span>
         </div>
-        <div class="card-body">
-          <p class="text-muted text-sm" style="margin-bottom:12px;line-height:1.6;">
-            This HTML block is injected <strong>below the main post content</strong> on the public post page.
-            Use it for embeds, call-to-action banners, related product tables, download buttons, YouTube videos, etc.
+        <div class="bf-body">
+          <p style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6;">
+            This HTML block is injected <strong style="color:var(--text);">below the main post content</strong>
+            on the public post page. Use it for embeds, call-to-action banners,
+            related product tables, download buttons, YouTube videos, etc.
           </p>
-          <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label">HTML Code</label>
-            <textarea name="bottom_html"
-              class="form-control"
-              rows="12"
-              placeholder="<!-- Paste any HTML here, e.g. -->&#10;<div class=&quot;cta-banner&quot;>&#10;  <h3>Download our Product Catalogue</h3>&#10;  <a href=&quot;/catalogue.pdf&quot; class=&quot;btn&quot;>Download PDF</a>&#10;</div>"
-              style="font-family: 'Courier New', monospace; font-size: 13px; resize: vertical;"
-              spellcheck="false">{{ obj.bottom_html|default:'' }}</textarea>
-          </div>
-          {% if obj.bottom_html %}
-          <div style="margin-top:12px;padding:12px;background:var(--color-bg-subtle, #f8f9fa);border-radius:8px;border:1px solid var(--color-border, #e5e7eb);">
-            <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;">
-              <i class="fa-solid fa-eye text-muted" style="font-size:12px;"></i>
-              <span class="text-muted text-sm" style="font-weight:600;">Live Preview</span>
-            </div>
-            <div class="bottom-html-preview">
-              {{ obj.bottom_html|safe }}
+          <div class="bf-row">
+            <label class="bf-label">HTML Code</label>
+            <textarea name="bottom_html" class="bf-textarea" rows="10"
+              placeholder="<!-- Paste any HTML here, e.g. -->&#10;<div class=&quot;cta-banner&quot;>&#10;  <h3>Download our Product Catalogue</h3>&#10;  <a href=&quot;/catalogue.pdf&quot; class=&quot;btn&quot;>Download PDF</a>&#10;</div>">{{ obj.bottom_html|default:'' }}</textarea>
+            <div class="html-hint">
+              <i class="fa-solid fa-shield-halved"></i>
+              Raw HTML is rendered as-is. Only admins can edit this field.
             </div>
           </div>
-          {% endif %}
         </div>
       </div>
-      <!-- ──────────────────────────────────────────────────────────────────── -->
 
-      <div class="card">
-        <div class="card-header"><span class="card-title">SEO</span></div>
-        <div class="card-body">
-          <div class="form-group">
-            <label class="form-label">Meta Title</label>
-            <input type="text" name="meta_title" class="form-control"
+      <!-- Images -->
+      <div class="bf-card">
+        <div class="bf-card-head"><i class="fa-solid fa-images"></i><span>Images</span></div>
+        <div class="bf-body">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div>
+              <label class="bf-label">Main / Listing Image</label>
+              <div class="img-upload-box" id="mainBox">
+                <input type="file" name="image" accept="image/*"
+                  onchange="previewImg(this,'mainPreview')"/>
+                <div id="mainPreview">
+                  {% if obj.image %}
+                    <img src="{{ obj.image.url }}" class="img-preview"/>
+                  {% else %}
+                    <div class="img-upload-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                    <div class="img-upload-text"><strong>Click to upload</strong><br/>PNG, JPG up to 5MB</div>
+                  {% endif %}
+                </div>
+              </div>
+              {% if obj.image %}
+              <div style="font-size:11px;color:var(--muted);margin-top:6px;word-break:break-all;">
+                {{ obj.image.name }}
+              </div>
+              {% endif %}
+            </div>
+            <div>
+              <label class="bf-label">Details Page Hero</label>
+              <div class="img-upload-box" id="heroBox">
+                <input type="file" name="hero_image" accept="image/*"
+                  onchange="previewImg(this,'heroPreview')"/>
+                <div id="heroPreview">
+                  <div class="img-upload-icon"><i class="fa-solid fa-cloud-arrow-up"></i></div>
+                  <div class="img-upload-text"><strong>Click to upload</strong><br/>1920×600px recommended</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SEO -->
+      <div class="bf-card">
+        <div class="bf-card-head"><i class="fa-solid fa-magnifying-glass"></i><span>SEO</span></div>
+        <div class="bf-body">
+          <div class="bf-row">
+            <label class="bf-label">Meta Title</label>
+            <input type="text" name="meta_title" class="bf-input"
               value="{{ obj.meta_title|default:'' }}" placeholder="SEO title (max 60 chars)"/>
           </div>
-          <div class="form-group">
-            <label class="form-label">Meta Description</label>
-            <textarea name="meta_description" class="form-control" rows="3"
+          <div class="bf-row">
+            <label class="bf-label">Meta Description</label>
+            <textarea name="meta_description" class="bf-textarea" rows="3"
               placeholder="SEO description (max 160 chars)">{{ obj.meta_description|default:'' }}</textarea>
           </div>
         </div>
@@ -88,22 +176,74 @@
 
     </div>
 
-    <!-- ── Sidebar ───────────────────────────────────────────────────────── -->
-    <div style="display:flex;flex-direction:column;gap:16px;">
-      <div class="card">
-        <div class="card-header"><span class="card-title">Publish</span></div>
-        <div class="card-body">
-          <div class="form-group">
-            <label class="form-label">Status</label>
-            <select name="status" class="form-control">
-              <option value="draft"     {% if obj.status == 'draft' or not obj %}selected{% endif %}>Draft</option>
-              <option value="published" {% if obj.status == 'published' %}selected{% endif %}>Published</option>
-              <option value="archived"  {% if obj.status == 'archived' %}selected{% endif %}>Archived</option>
-            </select>
+    <!-- ── RIGHT SIDEBAR ─────────────────────────────────────── -->
+    <div>
+
+      <!-- Publish -->
+      <div class="bf-card">
+        <div class="bf-card-head"><i class="fa-solid fa-rocket"></i><span>Publish</span></div>
+        <div class="bf-body">
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Published (Live)</div>
+              <div class="toggle-sub">Visible on website</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="publishToggle"
+                {% if obj.status == 'published' %}checked{% endif %}
+                onchange="document.getElementById('statusInput').value=this.checked?'published':'draft'"/>
+              <span class="toggle-slider"></span>
+            </label>
           </div>
-          <div class="form-group">
-            <label class="form-label">Category</label>
-            <select name="category" class="form-control">
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Featured Post</div>
+              <div class="toggle-sub">Highlighted in listings</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" name="is_featured"
+                {% if obj.is_featured %}checked{% endif %}/>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">AI Generated</div>
+              <div class="toggle-sub">Mark as AI content</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" name="is_ai_generated"
+                {% if obj.is_ai_generated %}checked{% endif %}/>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div style="margin-top:16px;">
+            <button type="submit" class="publish-btn">
+              <i class="fa-solid fa-floppy-disk"></i>
+              {% if obj %}Update Post{% else %}Publish Blog{% endif %}
+            </button>
+            {% if not obj %}
+            <button type="submit" class="draft-btn"
+              onclick="document.getElementById('statusInput').value='draft';">
+              <i class="fa-regular fa-floppy-disk"></i> Save as Draft
+            </button>
+            {% endif %}
+            {% if obj %}
+            <a href="{% url 'dashboard:blog_delete' obj.pk %}" class="delete-btn">
+              <i class="fa-solid fa-trash"></i> Delete Post
+            </a>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Meta -->
+      <div class="bf-card">
+        <div class="bf-card-head"><i class="fa-solid fa-sliders"></i><span>Meta</span></div>
+        <div class="bf-body">
+          <div class="bf-row">
+            <label class="bf-label">Category</label>
+            <select name="category" class="bf-select">
               <option value="">— No Category —</option>
               {% for cat in categories %}
               <option value="{{ cat.pk }}" {% if obj.category_id == cat.pk %}selected{% endif %}>
@@ -112,57 +252,85 @@
               {% endfor %}
             </select>
           </div>
-          <div class="form-group">
-            <label class="form-label">Tags</label>
-            <input type="text" name="tags" class="form-control"
-              value="{{ obj.tags|default:'' }}" placeholder="cement, OPC, construction"/>
+          <div class="bf-row">
+            <label class="bf-label">Author</label>
+            <select name="author" class="bf-select">
+              <option value="">— Select Author —</option>
+              {% for u in authors %}
+              <option value="{{ u.pk }}"
+                {% if obj.author_id == u.pk %}selected{% elif not obj and u == request.user %}selected{% endif %}>
+                {{ u.get_full_name|default:u.username }}
+              </option>
+              {% endfor %}
+            </select>
           </div>
-          <div class="form-check" style="margin-bottom:12px;">
-            <input type="checkbox" name="is_featured" id="is_featured"
-              {% if obj.is_featured %}checked{% endif %}/>
-            <label for="is_featured" style="font-size:14px;">Featured post</label>
-          </div>
-          <button type="submit" class="btn btn-primary" style="width:100%;">
-            <i class="fa-solid fa-floppy-disk"></i>
-            {% if obj %}Update Post{% else %}Create Post{% endif %}
-          </button>
           {% if obj %}
-          <a href="{% url 'dashboard:blog_delete' obj.pk %}" class="btn btn-danger" style="width:100%;margin-top:8px;">
-            <i class="fa-solid fa-trash"></i> Delete Post
-          </a>
-          {% endif %}
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-header"><span class="card-title">Featured Image</span></div>
-        <div class="card-body">
-          {% if obj.image %}
-          <img src="{{ obj.image.url }}" style="width:100%;border-radius:8px;margin-bottom:12px;"/>
-          {% endif %}
-          <input type="file" name="image" class="form-control" accept="image/*"/>
-        </div>
-      </div>
-
-      <!-- Quick-help card for the bottom HTML section -->
-      <div class="card" style="border-left:3px solid var(--color-primary, #3b82f6);">
-        <div class="card-body" style="padding:14px;">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-            <i class="fa-solid fa-lightbulb" style="color:var(--color-primary,#3b82f6);"></i>
-            <span style="font-weight:600;font-size:13px;">Bottom HTML Tips</span>
+          <div style="padding-top:10px;border-top:1px solid var(--border);">
+            <div style="font-size:11px;color:var(--muted);">Slug</div>
+            <div style="font-size:12px;color:var(--text);font-family:monospace;word-break:break-all;margin-top:3px;">
+              {{ obj.slug }}
+            </div>
           </div>
-          <ul class="text-muted text-sm" style="padding-left:16px;margin:0;line-height:1.8;">
-            <li>YouTube / Vimeo embeds</li>
-            <li>Download buttons or PDF links</li>
-            <li>Product tables or pricing cards</li>
-            <li>Newsletter signup forms</li>
-            <li>Social share widgets</li>
-            <li>Related links or banners</li>
-          </ul>
+          <div style="margin-top:10px;">
+            <div style="font-size:11px;color:var(--muted);">Views</div>
+            <div style="font-size:20px;font-weight:700;color:var(--text);">{{ obj.views }}</div>
+          </div>
+          <div style="margin-top:10px;">
+            <div style="font-size:11px;color:var(--muted);">Created</div>
+            <div style="font-size:12px;color:var(--text);">{{ obj.created_at|date:"d M Y, H:i" }}</div>
+          </div>
+          {% endif %}
         </div>
       </div>
-    </div>
 
+      <!-- Tags -->
+      <div class="bf-card">
+        <div class="bf-card-head"><i class="fa-solid fa-tags"></i><span>Tags</span></div>
+        <div class="bf-body">
+          <div class="tags-wrap" id="tagsList"></div>
+          <div class="tag-add-row">
+            <input type="text" id="tagInput" placeholder="Add tag + Enter"
+              onkeydown="if(event.key==='Enter'){event.preventDefault();addTag(this.value.trim());this.value='';}"/>
+          </div>
+          <div style="font-size:11px;color:var(--muted);margin-top:6px;">Press Enter to add a tag.</div>
+        </div>
+      </div>
+
+    </div>
   </div>
 </form>
+
+<script>
+function previewImg(input, previewId) {
+  if (!input.files || !input.files[0]) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    document.getElementById(previewId).innerHTML =
+      `<img src="${e.target.result}" class="img-preview"/>`;
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+let tags = [];
+(function initTags() {
+  const raw = "{{ obj.tags|default:''|escapejs }}";
+  if (raw.trim()) {
+    tags = raw.split(',').map(t => t.trim()).filter(Boolean);
+    renderTags();
+  }
+})();
+function addTag(val) {
+  if (!val || tags.includes(val)) return;
+  tags.push(val); renderTags();
+}
+function removeTag(i) {
+  tags.splice(i, 1); renderTags();
+}
+function renderTags() {
+  document.getElementById('tagsList').innerHTML = tags.map((t, i) =>
+    `<span class="tag-pill">${t}<button type="button" onclick="removeTag(${i})">✕</button></span>`
+  ).join('');
+  document.getElementById('tagsInput').value = tags.join(', ');
+}
+</script>
 {% endblock %}

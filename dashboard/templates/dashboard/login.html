@@ -10,8 +10,8 @@
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 body{
   font-family:'DM Sans',sans-serif;
-  background:#0a0c10;
-  color:#e8eaf0;
+  background:#f1f5f9;
+  color:#0f172a;
   min-height:100vh;
   display:flex;
   align-items:center;
@@ -22,26 +22,26 @@ body{
 .bg-grid{
   position:absolute;inset:0;
   background-image:
-    linear-gradient(rgba(1,96,178,.04) 1px,transparent 1px),
-    linear-gradient(90deg,rgba(1,96,178,.04) 1px,transparent 1px);
+    linear-gradient(rgba(0,87,200,.06) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,87,200,.06) 1px,transparent 1px);
   background-size:48px 48px;
 }
 .bg-glow{
   position:absolute;
   width:600px;height:600px;
   border-radius:50%;
-  background:radial-gradient(circle,rgba(1,96,178,.1) 0%,transparent 70%);
+  background:radial-gradient(circle,rgba(0,87,200,.08) 0%,transparent 70%);
   top:50%;left:50%;
   transform:translate(-50%,-50%);
 }
 .login-card{
   position:relative;z-index:1;
   width:100%;max-width:400px;
-  background:#0f1218;
-  border:1px solid #1e2535;
+  background:#ffffff;
+  border:1px solid #e2e8f0;
   border-radius:20px;
   padding:44px 38px;
-  box-shadow:0 24px 60px rgba(0,0,0,.6);
+  box-shadow:0 24px 60px rgba(0,87,200,.08);
 }
 .logo-wrap{
   display:flex;
@@ -55,47 +55,48 @@ body{
 .logo-name{
   font-family:'Syne',sans-serif;
   font-size:22px;font-weight:800;
-  {% comment %} color:#0160b2; {% endcomment %}
+  color:#0057C8;
   letter-spacing:.5px;
   line-height:1;
 }
 .logo-sub{
   font-size:10px;text-transform:uppercase;
   letter-spacing:2px;
-  {% comment %} color:#4b5563; {% endcomment %}
+  color:#94a3b8;
   margin-top:3px;
 }
 .page-title{
   font-family:'Syne',sans-serif;
   font-size:20px;font-weight:700;
-  color:#e8eaf0;
+  color:#0f172a;
   margin-bottom:6px;
 }
 .page-sub{
-  font-size:13px;color:#6b7280;
+  font-size:13px;color:#64748b;
   margin-bottom:28px;
 }
 .form-label{
   display:block;font-size:11px;font-weight:600;
   text-transform:uppercase;letter-spacing:.8px;
-  color:#6b7280;margin-bottom:7px;
+  color:#64748b;margin-bottom:7px;
 }
 .form-control{
   width:100%;
-  background:#161b24;
-  border:1px solid #1e2535;
+  background:#f8fafc;
+  border:1px solid #e2e8f0;
   border-radius:10px;
   padding:12px 16px;
-  color:#e8eaf0;
+  color:#0f172a;
   font-family:'DM Sans',sans-serif;
   font-size:14px;
   margin-bottom:18px;
   transition:border-color .15s;
 }
-.form-control:focus{outline:none;border-color:#0160b2;}
+.form-control:focus{outline:none;border-color:#0057C8;}
+.form-control::placeholder{color:#94a3b8;}
 .btn-login{
   width:100%;
-  background:#0160b2;
+  background:#0057C8;
   color:#fff;
   border:none;
   border-radius:10px;
@@ -107,11 +108,11 @@ body{
   transition:background .15s;
   margin-top:4px;
 }
-.btn-login:hover{background:#0472d0;}
+.btn-login:hover{background:#0046a3;}
 .error-msg{
-  background:rgba(239,68,68,.1);
-  border:1px solid rgba(239,68,68,.25);
-  color:#ef4444;
+  background:rgba(220,38,38,.08);
+  border:1px solid rgba(220,38,38,.2);
+  color:#dc2626;
   padding:10px 14px;
   border-radius:8px;
   font-size:13px;
@@ -127,12 +128,12 @@ body{
   <!-- Logo -->
   <div class="logo-wrap">
     <svg class="logo-icon" viewBox="0 0 60 60" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <rect x="3" y="3" width="54" height="54" rx="4" stroke="#0160b2" stroke-width="3" fill="none"/>
-      <rect x="8" y="8" width="44" height="44" rx="2" stroke="#0160b2" stroke-width="1.5" fill="none" opacity="0.4"/>
-      <path d="M18 14 L18 46" stroke="#0160b2" stroke-width="4" stroke-linecap="round"/>
-      <path d="M18 30 L38 14" stroke="#0160b2" stroke-width="4" stroke-linecap="round"/>
-      <path d="M18 30 L38 46" stroke="#0160b2" stroke-width="4" stroke-linecap="round"/>
-      <path d="M26 22 L32 30 L26 38" stroke="#0f1218" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="3" y="3" width="54" height="54" rx="4" stroke="#0057C8" stroke-width="3" fill="none"/>
+      <rect x="8" y="8" width="44" height="44" rx="2" stroke="#0057C8" stroke-width="1.5" fill="none" opacity="0.4"/>
+      <path d="M18 14 L18 46" stroke="#0057C8" stroke-width="4" stroke-linecap="round"/>
+      <path d="M18 30 L38 14" stroke="#0057C8" stroke-width="4" stroke-linecap="round"/>
+      <path d="M18 30 L38 46" stroke="#0057C8" stroke-width="4" stroke-linecap="round"/>
+      <path d="M26 22 L32 30 L26 38" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
     <div>
       <div class="logo-name">Kavalakat</div>

@@ -3,37 +3,48 @@ from django.utils.text import slugify
 from django.contrib.auth import get_user_model
 User = get_user_model()
 
+
 class Category(models.Model):
     name        = models.CharField(max_length=100, unique=True)
     slug        = models.SlugField(unique=True, blank=True)
     description = models.TextField(blank=True)
     order       = models.PositiveIntegerField(default=0)
+
     class Meta:
-        ordering = ['order','name']
+        ordering = ['order', 'name']
+
     def save(self, *args, **kwargs):
-        if not self.slug: self.slug = slugify(self.name)
+        if not self.slug:
+            self.slug = slugify(self.name)
         super().save(*args, **kwargs)
-    def __str__(self): return self.name
+
+    def __str__(self):
+        return self.name
+
 
 class Post(models.Model):
     STATUS_DRAFT     = 'draft'
     STATUS_PUBLISHED = 'published'
     STATUS_ARCHIVED  = 'archived'
-    STATUS_CHOICES   = [(STATUS_DRAFT,'Draft'),(STATUS_PUBLISHED,'Published'),(STATUS_ARCHIVED,'Archived')]
+    STATUS_CHOICES   = [
+        (STATUS_DRAFT,     'Draft'),
+        (STATUS_PUBLISHED, 'Published'),
+        (STATUS_ARCHIVED,  'Archived'),
+    ]
+
     title            = models.CharField(max_length=255)
     slug             = models.SlugField(unique=True, max_length=255, blank=True)
     content          = models.TextField()
     excerpt          = models.TextField(blank=True)
-    # ── New: raw HTML block appended after the main content ──────────────
-    bottom_html      = models.TextField(
-        blank=True,
-        verbose_name='Bottom HTML Section',
-        help_text='Raw HTML injected at the bottom of the post (embeds, CTAs, widgets, etc.)'
-    )
-    # ─────────────────────────────────────────────────────────────────────
     image            = models.ImageField(upload_to='blog/posts/', blank=True, null=True)
-    category         = models.ForeignKey(Category, on_delete=models.SET_NULL, null=True, blank=True, related_name='posts')
-    author           = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='blog_posts')
+    category         = models.ForeignKey(
+        Category, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='posts'
+    )
+    author           = models.ForeignKey(
+        User, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='blog_posts'
+    )
     status           = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_DRAFT)
     tags             = models.CharField(max_length=255, blank=True)
     is_ai_generated  = models.BooleanField(default=False)
@@ -41,14 +52,29 @@ class Post(models.Model):
     views            = models.PositiveIntegerField(default=0)
     meta_title       = models.CharField(max_length=255, blank=True)
     meta_description = models.TextField(blank=True)
+
+    # ── ADDED: Bottom HTML block ──────────────────────────────────────────────
+    # Injected below the main post content on the public page.
+    # Use for CTAs, download buttons, YouTube embeds, product tables, etc.
+    bottom_html      = models.TextField(
+        blank=True,
+        help_text='Raw HTML injected below the main post content on the public page.'
+    )
+
     created_at       = models.DateTimeField(auto_now_add=True)
     updated_at       = models.DateTimeField(auto_now=True)
     published_at     = models.DateTimeField(null=True, blank=True)
+
     class Meta:
         ordering = ['-created_at']
+
     def save(self, *args, **kwargs):
-        if not self.slug: self.slug = slugify(self.title)
+        if not self.slug:
+            self.slug = slugify(self.title)
         super().save(*args, **kwargs)
-    def __str__(self): return self.title
+
+    def __str__(self):
+        return self.title
+
     def increment_views(self):
-        Post.objects.filter(pk=self.pk).update(views=models.F('views')+1)
+        Post.objects.filter(pk=self.pk).update(views=models.F('views') + 1)
