@@ -19,6 +19,10 @@ ALLOWED_HOSTS = os.environ.get(
     'localhost,127.0.0.1,api.kavalakat.com'
 ).split(',')
 
+---------(ANTHROPIC)--------
+
+ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
+
 # ── CSRF Trusted Origins ──────────────────────────────────────────────────────
 # Required for Django 4.0+ — fixes 403 CSRF error on api.kavalakat.com
 CSRF_TRUSTED_ORIGINS = os.environ.get(
@@ -51,6 +55,7 @@ INSTALLED_APPS = [
     'ai_module.apps.AiModuleConfig',
     'dashboard.apps.DashboardConfig',
     'services.apps.ServicesConfig',
+     'chat.apps.ChatConfig',
 ]
 
 # ── Middleware ────────────────────────────────────────────────────────────────
@@ -248,6 +253,9 @@ LOGGING = {
 #     'localhost,127.0.0.1,.onrender.com'
 # ).split(',')
 
+# # ---------(ANTHROPIC)--------
+
+# ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
 
 # # ── Installed Apps ────────────────────────────────────────────────────────────
 # INSTALLED_APPS = [
@@ -275,6 +283,7 @@ LOGGING = {
 #     'ai_module.apps.AiModuleConfig',
 #     'dashboard.apps.DashboardConfig',
 #     'services.apps.ServicesConfig',
+#     'chat.apps.ChatConfig',
 # ]
 
 
