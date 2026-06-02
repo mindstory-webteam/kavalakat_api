@@ -19,7 +19,7 @@ ALLOWED_HOSTS = os.environ.get(
     'localhost,127.0.0.1,api.kavalakat.com'
 ).split(',')
 
----------(ANTHROPIC)--------
+# ---------(ANTHROPIC)--------
 
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
 
