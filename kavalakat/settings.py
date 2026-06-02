@@ -198,43 +198,58 @@ if not DEBUG:
     CSRF_COOKIE_SAMESITE   = 'Lax'
 
 # ── Logging ───────────────────────────────────────────────────────────────────
+
+# ── Logging ───────────────────────────────────────────────────────────────────
 LOGGING = {
-    'version':                  1,
+    'version': 1,
     'disable_existing_loggers': False,
+
     'formatters': {
         'verbose': {
-            'format': '[{levelname}] {asctime} {module}: {message}',
-            'style':  '{',
+            'format': '[{levelname}] {asctime} {name}: {message}',
+            'style': '{',
         },
     },
+
     'handlers': {
         'console': {
-            'class':     'logging.StreamHandler',
+            'class': 'logging.StreamHandler',
             'formatter': 'verbose',
         },
         'file': {
-            'class':     'logging.FileHandler',
-            'filename':  '/var/log/kavalakat_django.log',
+            'class': 'logging.FileHandler',
+            'filename': '/var/log/kavalakat_django.log',
             'formatter': 'verbose',
         },
     },
+
     'root': {
         'handlers': ['console', 'file'],
-        'level':    'INFO',
+        'level': 'INFO',
     },
+
     'loggers': {
         'django': {
-            'handlers':  ['console', 'file'],
-            'level':     'WARNING',
+            'handlers': ['console', 'file'],
+            'level': 'WARNING',
             'propagate': False,
         },
+
         'ai_module': {
-            'handlers':  ['console', 'file'],
-            'level':     'DEBUG',
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
+            'propagate': False,
+        },
+
+        'chat': {
+            'handlers': ['console', 'file'],
+            'level': 'DEBUG',
             'propagate': False,
         },
     },
 }
+
+# -----------------------------------------------------------
 
 # # --------------------------------renderrrrr----------------------------------------
 # import os
