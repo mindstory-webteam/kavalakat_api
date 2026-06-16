@@ -1,0 +1,51 @@
+{% extends 'dashboard/base.html' %}
+{% block topbar_actions %}
+<a href="{% url 'dashboard:event_categories' %}" class="btn btn-secondary">
+  <i class="fa-solid fa-arrow-left"></i> Back to Categories
+</a>
+{% endblock %}
+{% block content %}
+<div style="max-width:560px;">
+  <div class="card">
+    <div class="card-header"><span class="card-title">{{ page_title }}</span></div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label class="form-label">Category Name *</label>
+          <input type="text" name="category_name" class="form-control"
+                 value="{{ obj.name|default:'' }}" required
+                 placeholder="e.g. Workshops, Webinars, Festivals"/>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea name="description" class="form-control" rows="3"
+            placeholder="Brief description of this category…">{{ obj.description|default:'' }}</textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select name="status" class="form-control" style="width:180px;">
+            <option value="active" {% if obj.status == 'active' or not obj %}selected{% endif %}>Active</option>
+            <option value="inactive" {% if obj.status == 'inactive' %}selected{% endif %}>Inactive</option>
+          </select>
+        </div>
+
+        <div style="display:flex;gap:10px;">
+          <button type="submit" class="btn btn-primary" style="padding:10px 24px;">
+            <i class="fa-solid fa-floppy-disk"></i>
+            {% if obj %}Update Category{% else %}Create Category{% endif %}
+          </button>
+          {% if obj %}
+          <a href="{% url 'dashboard:event_cat_delete' obj.pk %}" class="btn btn-danger">
+            <i class="fa-solid fa-trash"></i> Delete
+          </a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -8,6 +8,7 @@ from django.views.decorators.http import require_http_methods
 from django.db.models import Count, Q, Prefetch
 from django.utils import timezone
 from django.core.paginator import Paginator
+from django.core.exceptions import ValidationError
 from django.urls import reverse
 
 
@@ -37,9 +38,10 @@ def dashboard_logout(request):
 @staff_required
 def dashboard_home(request):
     from blog.models import Post
-    from contact.models import Enquiry, Career, JobApplication
+    from contact.models import Enquiry, Career, JobApplication, ContactLocation
     from portfolio.models import Item
     from pages.models import Page
+    from events.models import Event, EventCategory
 
     try:
         new_applications = JobApplication.objects.filter(status='new').count()
@@ -56,9 +58,15 @@ def dashboard_home(request):
         'new_applications':   new_applications,
         'portfolio_items':    Item.objects.count(),
         'active_pages':       Page.objects.filter(is_active=True).count(),
+        'total_events':           Event.objects.count(),
+        'published_events':       Event.objects.filter(status=Event.STATUS_PUBLISHED).count(),
+        'total_event_categories': EventCategory.objects.count(),
+        'total_locations':        ContactLocation.objects.count(),
+        'active_locations':       ContactLocation.objects.filter(status=ContactLocation.STATUS_ACTIVE).count(),
     }
     recent_enquiries = Enquiry.objects.order_by('-created_at')[:5]
     recent_posts     = Post.objects.select_related('category').order_by('-created_at')[:5]
+    recent_events    = Event.objects.select_related('category').order_by('-created_at')[:5]
 
     from django.db.models.functions import TruncMonth
     monthly = (
@@ -76,6 +84,7 @@ def dashboard_home(request):
     }
     return render(request, 'dashboard/home.html', {
         'stats': stats, 'recent_enquiries': recent_enquiries, 'recent_posts': recent_posts,
+        'recent_events': recent_events,
         'chart_labels': json.dumps(chart_labels), 'chart_data': json.dumps(chart_data),
         'post_status': json.dumps(post_status), 'page_title': 'Dashboard',
         'new_application_count': new_applications,
@@ -1618,3 +1627,315 @@ def service_cat_delete(request, pk):
         messages.success(request, f'Category "{name}" deleted.')
         return redirect('dashboard:service_categories')
     return render(request, 'dashboard/confirm_delete.html', {'obj':obj,'page_title':f'Delete Category — {obj.name}'})
+
+# ── EVENTS — CATEGORIES ───────────────────────────────────────────────────────
+@staff_required
+def event_categories(request):
+    from events.models import EventCategory
+    cats = EventCategory.objects.annotate(event_count=Count('events')).order_by('name')
+    return render(request, 'dashboard/events/categories.html', {
+        'categories': cats, 'page_title': 'Event Categories',
+    })
+
+
+@staff_required
+def event_cat_create(request):
+    from events.models import EventCategory
+    if request.method == 'POST':
+        name = request.POST.get('category_name', '').strip()
+        if not name:
+            messages.error(request, 'Category name is required.')
+        else:
+            try:
+                EventCategory.objects.create(
+                    name=name,
+                    description=request.POST.get('description', ''),
+                    status=request.POST.get('status', EventCategory.STATUS_ACTIVE),
+                )
+                messages.success(request, f'Category "{name}" created successfully.')
+                return redirect('dashboard:event_categories')
+            except Exception as e:
+                messages.error(request, f'Error creating category: {e}')
+    return render(request, 'dashboard/events/category_form.html', {'page_title': 'Add Event Category', 'obj': None})
+
+
+@staff_required
+def event_cat_edit(request, pk):
+    from events.models import EventCategory
+    obj = get_object_or_404(EventCategory, pk=pk)
+    if request.method == 'POST':
+        name = request.POST.get('category_name', '').strip()
+        if not name:
+            messages.error(request, 'Category name is required.')
+        else:
+            obj.name = name
+            obj.description = request.POST.get('description', '')
+            obj.status = request.POST.get('status', obj.status)
+            obj.save()
+            messages.success(request, f'Category "{obj.name}" updated.')
+            return redirect('dashboard:event_categories')
+    return render(request, 'dashboard/events/category_form.html', {'page_title': f'Edit — {obj.name}', 'obj': obj})
+
+
+@staff_required
+def event_cat_delete(request, pk):
+    from events.models import EventCategory
+    obj = get_object_or_404(EventCategory, pk=pk)
+    if request.method == 'POST':
+        name = obj.name
+        obj.delete()
+        messages.success(request, f'Category "{name}" deleted.')
+        return redirect('dashboard:event_categories')
+    return render(request, 'dashboard/confirm_delete.html', {'obj': obj, 'page_title': f'Delete Category — {obj.name}'})
+
+
+# ── EVENTS ─────────────────────────────────────────────────────────────────
+@staff_required
+def event_list(request):
+    from events.models import Event, EventCategory
+
+    search = request.GET.get('search', '').strip()
+    category_id = request.GET.get('category', '').strip()
+    status_filter = request.GET.get('status', '').strip()
+
+    qs = Event.objects.select_related('category').all()
+    if search:
+        qs = qs.filter(Q(event_name__icontains=search) | Q(description__icontains=search))
+    if category_id:
+        qs = qs.filter(category_id=category_id)
+    if status_filter:
+        qs = qs.filter(status=status_filter)
+
+    events = Paginator(qs.order_by('-event_date'), 10).get_page(request.GET.get('page'))
+    categories = EventCategory.objects.order_by('name')
+
+    return render(request, 'dashboard/events/list.html', {
+        'events': events,
+        'categories': categories,
+        'search': search,
+        'selected_category': category_id,
+        'selected_status': status_filter,
+        'page_title': 'Events',
+    })
+
+
+@staff_required
+def event_create(request):
+    from events.models import Event, EventCategory
+    categories = EventCategory.objects.order_by('name')
+    if request.method == 'POST':
+        name       = request.POST.get('event_name', '').strip()
+        event_date = request.POST.get('event_date', '').strip()
+        if not name:
+            messages.error(request, 'Event name is required.')
+        elif not event_date:
+            messages.error(request, 'Event date is required.')
+        else:
+            try:
+                Event.objects.create(
+                    event_name       = name,
+                    description      = request.POST.get('description', ''),
+                    category_id      = request.POST.get('category') or None,
+                    tag              = request.POST.get('tag', ''),
+                    event_date       = event_date,
+                    event_time       = request.POST.get('event_time', ''),
+                    venue            = request.POST.get('venue', ''),
+                    location         = request.POST.get('location', ''),
+                    organizer        = request.POST.get('organizer', ''),
+                    registration_url = request.POST.get('registration_url', ''),
+                    is_featured      = request.POST.get('is_featured') == 'on',
+                    status           = request.POST.get('status', Event.STATUS_DRAFT),
+                    featured_image   = request.FILES.get('featured_image'),
+                    organizer_logo   = request.FILES.get('organizer_logo'),
+                )
+                messages.success(request, f'Event "{name}" created successfully.')
+                return redirect('dashboard:event_list')
+            except ValidationError as e:
+                messages.error(request, '; '.join(e.messages) if hasattr(e, 'messages') else str(e))
+            except Exception as e:
+                messages.error(request, f'Error creating event: {e}')
+    return render(request, 'dashboard/events/form.html', {
+        'page_title': 'Add Event', 'obj': None, 'categories': categories,
+    })
+
+
+@staff_required
+def event_edit(request, pk):
+    from events.models import Event, EventCategory
+    obj        = get_object_or_404(Event.objects.prefetch_related('gallery_images'), pk=pk)
+    categories = EventCategory.objects.order_by('name')
+    if request.method == 'POST':
+        name       = request.POST.get('event_name', '').strip()
+        event_date = request.POST.get('event_date', '').strip()
+        if not name:
+            messages.error(request, 'Event name is required.')
+        elif not event_date:
+            messages.error(request, 'Event date is required.')
+        else:
+            try:
+                obj.event_name       = name
+                obj.description      = request.POST.get('description', '')
+                obj.category_id      = request.POST.get('category') or None
+                obj.tag              = request.POST.get('tag', '')
+                obj.event_date       = event_date
+                obj.event_time       = request.POST.get('event_time', '')
+                obj.venue            = request.POST.get('venue', '')
+                obj.location         = request.POST.get('location', '')
+                obj.organizer        = request.POST.get('organizer', '')
+                obj.registration_url = request.POST.get('registration_url', '')
+                obj.is_featured      = request.POST.get('is_featured') == 'on'
+                obj.status           = request.POST.get('status', obj.status)
+                if request.FILES.get('featured_image'):
+                    obj.featured_image = request.FILES['featured_image']
+                if request.FILES.get('organizer_logo'):
+                    obj.organizer_logo = request.FILES['organizer_logo']
+                obj.full_clean(exclude=['slug'])
+                obj.save()
+                messages.success(request, f'Event "{obj.event_name}" updated.')
+                return redirect('dashboard:event_list')
+            except ValidationError as e:
+                messages.error(request, '; '.join(e.messages) if hasattr(e, 'messages') else str(e))
+    return render(request, 'dashboard/events/form.html', {
+        'page_title': f'Edit — {obj.event_name}', 'obj': obj, 'categories': categories,
+    })
+
+
+@staff_required
+def event_delete(request, pk):
+    from events.models import Event
+    obj = get_object_or_404(Event, pk=pk)
+    if request.method == 'POST':
+        name = obj.event_name
+        obj.delete()
+        messages.success(request, f'Event "{name}" deleted.')
+        return redirect('dashboard:event_list')
+    return render(request, 'dashboard/confirm_delete.html', {'obj': obj, 'page_title': f'Delete — {obj.event_name}'})
+
+
+# ── CONTACT LOCATIONS ─────────────────────────────────────────────────────────
+@staff_required
+def branch_list(request):
+    from contact.models import ContactLocation
+
+    search = request.GET.get('search', '').strip()
+    status_filter = request.GET.get('status', '').strip()
+
+    qs = ContactLocation.objects.all()
+    if search:
+        qs = qs.filter(
+            Q(branch_name__icontains=search)
+            | Q(address__icontains=search)
+            | Q(phone_number__icontains=search)
+            | Q(email__icontains=search)
+        )
+    if status_filter:
+        qs = qs.filter(status=status_filter)
+
+    branches = Paginator(qs.order_by('display_order', 'branch_name'), 10).get_page(request.GET.get('page'))
+    return render(request, 'dashboard/branches/list.html', {
+        'branches': branches, 'search': search, 'selected_status': status_filter,
+        'page_title': 'Contact Locations',
+    })
+
+
+@staff_required
+def branch_create(request):
+    from contact.models import ContactLocation
+    if request.method == 'POST':
+        name = request.POST.get('branch_name', '').strip()
+        address = request.POST.get('address', '').strip()
+        if not name:
+            messages.error(request, 'Branch name is required.')
+        elif not address:
+            messages.error(request, 'Address is required.')
+        else:
+            try:
+                ContactLocation.objects.create(
+                    branch_name=name,
+                    address=address,
+                    phone_number=request.POST.get('phone_number', ''),
+                    whatsapp=request.POST.get('whatsapp', ''),
+                    email=request.POST.get('email', ''),
+                    google_map_link=request.POST.get('google_map_link', ''),
+                    working_hours=request.POST.get('working_hours', ''),
+                    display_order=int(request.POST.get('display_order', 0) or 0),
+                    status=request.POST.get('status', ContactLocation.STATUS_ACTIVE),
+                )
+                messages.success(request, f'Location "{name}" created successfully.')
+                return redirect('dashboard:branch_list')
+            except ValidationError as e:
+                messages.error(request, '; '.join(e.messages) if hasattr(e, 'messages') else str(e))
+            except Exception as e:
+                messages.error(request, f'Error creating location: {e}')
+    return render(request, 'dashboard/branches/form.html', {'page_title': 'Add Contact Location', 'obj': None})
+
+
+@staff_required
+def branch_edit(request, pk):
+    from contact.models import ContactLocation
+    obj = get_object_or_404(ContactLocation, pk=pk)
+    if request.method == 'POST':
+        name = request.POST.get('branch_name', '').strip()
+        address = request.POST.get('address', '').strip()
+        if not name:
+            messages.error(request, 'Branch name is required.')
+        elif not address:
+            messages.error(request, 'Address is required.')
+        else:
+            try:
+                obj.branch_name   = name
+                obj.address       = address
+                obj.phone_number  = request.POST.get('phone_number', '')
+                obj.whatsapp      = request.POST.get('whatsapp', '')
+                obj.email         = request.POST.get('email', '')
+                obj.google_map_link = request.POST.get('google_map_link', '')
+                obj.working_hours = request.POST.get('working_hours', '')
+                obj.display_order = int(request.POST.get('display_order', 0) or 0)
+                obj.status        = request.POST.get('status', obj.status)
+                obj.save()
+                messages.success(request, f'Location "{obj.branch_name}" updated.')
+                return redirect('dashboard:branch_list')
+            except ValidationError as e:
+                messages.error(request, '; '.join(e.messages) if hasattr(e, 'messages') else str(e))
+    return render(request, 'dashboard/branches/form.html', {'page_title': f'Edit — {obj.branch_name}', 'obj': obj})
+
+
+@staff_required
+def branch_delete(request, pk):
+    from contact.models import ContactLocation
+    obj = get_object_or_404(ContactLocation, pk=pk)
+    if request.method == 'POST':
+        name = obj.branch_name
+        obj.delete()
+        messages.success(request, f'Location "{name}" deleted.')
+        return redirect('dashboard:branch_list')
+    return render(request, 'dashboard/confirm_delete.html', {'obj': obj, 'page_title': f'Delete — {obj.branch_name}'})
+
+
+# ── EVENT GALLERY IMAGE MANAGEMENT ────────────────────────────────────────────
+@staff_required
+def event_image_add(request, pk):
+    from events.models import Event, EventImage
+    event = get_object_or_404(Event, pk=pk)
+    if request.method == 'POST' and request.FILES.get('image'):
+        try:
+            EventImage.objects.create(
+                event=event,
+                image=request.FILES['image'],
+                caption=request.POST.get('caption', ''),
+                order=int(request.POST.get('order', 0) or 0),
+            )
+            messages.success(request, 'Gallery image added.')
+        except Exception as e:
+            messages.error(request, f'Upload failed: {e}')
+    return redirect('dashboard:event_edit', pk=pk)
+
+
+@staff_required
+def event_image_delete(request, pk, img_pk):
+    from events.models import EventImage
+    img = get_object_or_404(EventImage, pk=img_pk, event_id=pk)
+    if request.method == 'POST':
+        img.delete()
+        messages.success(request, 'Gallery image removed.')
+    return redirect('dashboard:event_edit', pk=pk)

@@ -1,0 +1,196 @@
+{% extends 'dashboard/base.html' %}
+{% block topbar_actions %}
+<a href="{% url 'dashboard:event_list' %}" class="btn btn-secondary">
+  <i class="fa-solid fa-arrow-left"></i> Back to Events
+</a>
+{% endblock %}
+{% block content %}
+<div style="max-width:760px;">
+  <div class="card">
+    <div class="card-header"><span class="card-title">{{ page_title }}</span></div>
+    <div class="card-body">
+      <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+
+        <!-- Event Name -->
+        <div class="form-group">
+          <label class="form-label">Event Name *</label>
+          <input type="text" name="event_name" class="form-control"
+                 value="{{ obj.event_name|default:'' }}" required
+                 placeholder="e.g. Kerala Build Expo 2026"/>
+        </div>
+
+        <!-- Description -->
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <textarea name="description" class="form-control" rows="4"
+            placeholder="Describe the event…">{{ obj.description|default:'' }}</textarea>
+        </div>
+
+        <!-- Category + Tag row -->
+        <div style="display:flex;gap:16px;flex-wrap:wrap;">
+          <div class="form-group" style="flex:1;min-width:200px;">
+            <label class="form-label">Category</label>
+            <select name="category" class="form-control">
+              <option value="">— No Category —</option>
+              {% for cat in categories %}
+              <option value="{{ cat.pk }}" {% if obj.category_id == cat.pk %}selected{% endif %}>{{ cat.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group" style="flex:1;min-width:180px;">
+            <label class="form-label">Tag <span style="color:#6b7280;font-size:11px;font-weight:400;">(pill label on card, auto-filled from category)</span></label>
+            <input type="text" name="tag" class="form-control"
+                   value="{{ obj.tag|default:'' }}" placeholder="e.g. Expo, Workshop, CSR"/>
+          </div>
+        </div>
+
+        <!-- Date + Time row -->
+        <div style="display:flex;gap:16px;flex-wrap:wrap;">
+          <div class="form-group" style="flex:1;min-width:200px;">
+            <label class="form-label">Event Date &amp; Time *</label>
+            <input type="datetime-local" name="event_date" class="form-control" required
+                   value="{{ obj.event_date|date:'Y-m-d\TH:i'|default:'' }}"/>
+          </div>
+          <div class="form-group" style="flex:1;min-width:200px;">
+            <label class="form-label">Display Time <span style="color:#6b7280;font-size:11px;font-weight:400;">(shown on card)</span></label>
+            <input type="text" name="event_time" class="form-control"
+                   value="{{ obj.event_time|default:'' }}" placeholder="10:00 AM – 6:00 PM"/>
+          </div>
+        </div>
+
+        <!-- Venue + Location -->
+        <div style="display:flex;gap:16px;flex-wrap:wrap;">
+          <div class="form-group" style="flex:1;min-width:200px;">
+            <label class="form-label">Venue</label>
+            <input type="text" name="venue" class="form-control"
+                   value="{{ obj.venue|default:'' }}" placeholder="International Trade Fair Complex"/>
+          </div>
+          <div class="form-group" style="flex:1;min-width:200px;">
+            <label class="form-label">Location</label>
+            <input type="text" name="location" class="form-control"
+                   value="{{ obj.location|default:'' }}" placeholder="Kochi, Kerala"/>
+          </div>
+        </div>
+
+        <!-- Organiser -->
+        <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">
+          <div class="form-group" style="flex:1;min-width:220px;">
+            <label class="form-label">Organiser Name</label>
+            <input type="text" name="organizer" class="form-control"
+                   value="{{ obj.organizer|default:'' }}" placeholder="Kavalakat Group"/>
+          </div>
+          <div class="form-group" style="flex:1;min-width:220px;">
+            <label class="form-label">Organiser Logo <span style="color:#6b7280;font-size:11px;font-weight:400;">JPG/PNG/WEBP max 5 MB</span></label>
+            {% if obj.organizer_logo %}
+            <div style="margin-bottom:6px;">
+              <img src="{{ obj.organizer_logo.url }}" style="width:60px;height:44px;border-radius:6px;object-fit:contain;background:#f3f4f6;"/>
+            </div>
+            {% endif %}
+            <input type="file" name="organizer_logo" class="form-control" accept=".jpg,.jpeg,.png,.webp"/>
+          </div>
+        </div>
+
+        <!-- Featured Image -->
+        <div class="form-group">
+          <label class="form-label">Featured Image (Card Thumbnail) <span style="color:#6b7280;font-size:11px;font-weight:400;">JPG/PNG/WEBP max 5 MB</span></label>
+          {% if obj.featured_image %}
+          <div style="margin-bottom:8px;">
+            <img src="{{ obj.featured_image.url }}" style="max-width:220px;max-height:130px;border-radius:8px;object-fit:cover;"/>
+          </div>
+          {% endif %}
+          <input type="file" name="featured_image" class="form-control" accept=".jpg,.jpeg,.png,.webp"/>
+        </div>
+
+        <!-- Gallery images (edit only) -->
+        {% if obj %}
+        <div class="form-group" style="border-top:1px solid var(--border);padding-top:20px;margin-top:4px;">
+          <label class="form-label">Gallery Images</label>
+          <div style="font-size:12px;color:#6b7280;margin-bottom:12px;">
+            These appear in the popup carousel alongside the featured image.
+            Upload additional images below — or manage them via the
+            <a href="/admin/events/event/{{ obj.pk }}/change/" target="_blank" style="color:var(--accent);">Django Admin</a>.
+          </div>
+          {% if obj.gallery_images.all %}
+          <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+            {% for gi in obj.gallery_images.all %}
+            <div style="position:relative;">
+              <img src="{{ gi.image.url }}" style="width:80px;height:60px;border-radius:6px;object-fit:cover;"/>
+              <form method="post" action="{% url 'dashboard:event_image_delete' obj.pk gi.pk %}" style="display:inline;">
+                {% csrf_token %}
+                <button type="submit" title="Remove"
+                  style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;
+                         background:#ef4444;border:none;border-radius:50%;cursor:pointer;
+                         color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;">
+                  ✕
+                </button>
+              </form>
+            </div>
+            {% endfor %}
+          </div>
+          {% endif %}
+          <!-- Upload new gallery images -->
+          <div style="border:1px dashed var(--border);border-radius:8px;padding:16px;">
+            <form method="post" enctype="multipart/form-data"
+                  action="{% url 'dashboard:event_image_add' obj.pk %}">
+              {% csrf_token %}
+              <div style="display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;">
+                <div style="flex:1;min-width:200px;">
+                  <label class="form-label" style="font-size:12px;">Add Gallery Image</label>
+                  <input type="file" name="image" class="form-control" accept=".jpg,.jpeg,.png,.webp" required/>
+                </div>
+                <div style="flex:1;min-width:160px;">
+                  <label class="form-label" style="font-size:12px;">Caption (optional)</label>
+                  <input type="text" name="caption" class="form-control" placeholder="Alt text…"/>
+                </div>
+                <div>
+                  <button type="submit" class="btn btn-secondary" style="padding:9px 16px;">
+                    <i class="fa-solid fa-upload"></i> Upload
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Registration URL -->
+        <div class="form-group" style="margin-top:8px;">
+          <label class="form-label">Registration URL</label>
+          <input type="url" name="registration_url" class="form-control"
+                 value="{{ obj.registration_url|default:'' }}" placeholder="https://… or /contact"/>
+        </div>
+
+        <!-- Featured flag + Status -->
+        <div style="display:flex;gap:24px;align-items:center;margin-bottom:20px;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" name="is_featured" id="is_featured"
+                   {% if obj.is_featured %}checked{% endif %}/>
+            <label for="is_featured" style="font-size:13px;cursor:pointer;">
+              Featured Event <span style="color:#6b7280;font-size:11px;">(shows first on page)</span>
+            </label>
+          </div>
+          <div class="form-group" style="margin:0;min-width:160px;">
+            <select name="status" class="form-control" style="width:180px;">
+              <option value="draft" {% if obj.status == 'draft' or not obj %}selected{% endif %}>Draft</option>
+              <option value="published" {% if obj.status == 'published' %}selected{% endif %}>Published</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;">
+          <button type="submit" class="btn btn-primary" style="padding:10px 24px;">
+            <i class="fa-solid fa-floppy-disk"></i>
+            {% if obj %}Update Event{% else %}Create Event{% endif %}
+          </button>
+          {% if obj %}
+          <a href="{% url 'dashboard:event_delete' obj.pk %}" class="btn btn-danger">
+            <i class="fa-solid fa-trash"></i> Delete
+          </a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

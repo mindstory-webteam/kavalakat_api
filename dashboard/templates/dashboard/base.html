@@ -567,6 +567,24 @@ select.form-control option { background: var(--surface2); color: var(--text); }
       <i class="fa-solid fa-layer-group"></i> Categories
     </a>
 
+    <!-- EVENTS -->
+    <div class="nav-section">Events</div>
+    <a href="{% url 'dashboard:event_list' %}"
+       class="nav-item {% if url_name in 'event_list event_create event_edit event_delete' %}active{% endif %}">
+      <i class="fa-solid fa-calendar-days"></i> Events
+    </a>
+    <a href="{% url 'dashboard:event_categories' %}"
+       class="nav-sub-item {% if url_name in 'event_categories event_cat_create event_cat_edit event_cat_delete' %}active{% endif %}">
+      <i class="fa-solid fa-tags"></i> Categories
+    </a>
+
+    <!-- BRANCH LOCATIONS -->
+    <div class="nav-section">Locations</div>
+    <a href="{% url 'dashboard:branch_list' %}"
+       class="nav-item {% if url_name in 'branch_list branch_create branch_edit branch_delete' %}active{% endif %}">
+      <i class="fa-solid fa-location-dot"></i> Contact Locations
+    </a>
+
     {% endwith %}
 
   </nav>

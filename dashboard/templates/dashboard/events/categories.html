@@ -1,0 +1,70 @@
+{% extends 'dashboard/base.html' %}
+{% block topbar_actions %}
+<a href="{% url 'dashboard:event_cat_create' %}" class="btn btn-primary">
+  <i class="fa-solid fa-plus"></i> Add Category
+</a>
+<a href="{% url 'dashboard:event_list' %}" class="btn btn-secondary">
+  <i class="fa-solid fa-calendar-days"></i> Manage Events
+</a>
+{% endblock %}
+{% block content %}
+
+<div class="card">
+  <div class="card-header">
+    <span class="card-title">Event Categories</span>
+    <span class="text-muted text-sm">{{ categories|length }} categor{{ categories|length|pluralize:"y,ies" }}</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Category Name</th>
+          <th>Slug</th>
+          <th>Description</th>
+          <th>Events</th>
+          <th style="text-align:center;">Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for cat in categories %}
+        <tr>
+          <td style="font-weight:600;">{{ cat.name }}</td>
+          <td class="text-muted text-sm">{{ cat.slug }}</td>
+          <td class="text-muted text-sm">{{ cat.description|truncatechars:60|default:"—" }}</td>
+          <td><span class="badge badge-blue">{{ cat.event_count }} event{{ cat.event_count|pluralize }}</span></td>
+          <td style="text-align:center;">
+            {% if cat.status == 'active' %}
+            <span class="badge badge-green">Active</span>
+            {% else %}
+            <span class="badge badge-gray">Inactive</span>
+            {% endif %}
+          </td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <a href="{% url 'dashboard:event_cat_edit' cat.pk %}" class="btn btn-secondary btn-sm btn-icon" title="Edit">
+                <i class="fa-solid fa-pen"></i>
+              </a>
+              <a href="{% url 'dashboard:event_cat_delete' cat.pk %}" class="btn btn-danger btn-sm btn-icon" title="Delete">
+                <i class="fa-solid fa-trash"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6">
+            <div class="empty-state">
+              <i class="fa-solid fa-layer-group"></i>
+              No event categories yet.
+              <a href="{% url 'dashboard:event_cat_create' %}">Create the first category</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

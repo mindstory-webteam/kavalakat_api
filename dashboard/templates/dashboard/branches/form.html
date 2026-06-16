@@ -1,0 +1,91 @@
+{% extends 'dashboard/base.html' %}
+{% block topbar_actions %}
+<a href="{% url 'dashboard:branch_list' %}" class="btn btn-secondary">
+  <i class="fa-solid fa-arrow-left"></i> Back to Locations
+</a>
+{% endblock %}
+{% block content %}
+<div style="max-width:700px;">
+  <div class="card">
+    <div class="card-header"><span class="card-title">{{ page_title }}</span></div>
+    <div class="card-body">
+      <form method="post">
+        {% csrf_token %}
+
+        <div class="form-group">
+          <label class="form-label">Branch Name *</label>
+          <input type="text" name="branch_name" class="form-control"
+                 value="{{ obj.branch_name|default:'' }}" required
+                 placeholder="e.g. THRISSUR, PALAKKAD, KANNUR"/>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Address *</label>
+          <textarea name="address" class="form-control" rows="3" required
+            placeholder="Full postal address…">{{ obj.address|default:'' }}</textarea>
+        </div>
+
+        <div style="display:flex;gap:16px;flex-wrap:wrap;">
+          <div class="form-group" style="flex:1;min-width:200px;">
+            <label class="form-label">Phone Number</label>
+            <input type="text" name="phone_number" class="form-control"
+                   value="{{ obj.phone_number|default:'' }}" placeholder="+91 9876543210"/>
+          </div>
+          <div class="form-group" style="flex:1;min-width:200px;">
+            <label class="form-label">WhatsApp</label>
+            <input type="text" name="whatsapp" class="form-control"
+                   value="{{ obj.whatsapp|default:'' }}" placeholder="+91 9876543210"/>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:16px;flex-wrap:wrap;">
+          <div class="form-group" style="flex:1;min-width:200px;">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-control"
+                   value="{{ obj.email|default:'' }}" placeholder="branch@kavalakat.com"/>
+          </div>
+          <div class="form-group" style="flex:1;min-width:200px;">
+            <label class="form-label">Working Hours</label>
+            <input type="text" name="working_hours" class="form-control"
+                   value="{{ obj.working_hours|default:'' }}" placeholder="Mon–Sat 9 AM – 6 PM"/>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Google Map Link</label>
+          <input type="url" name="google_map_link" class="form-control"
+                 value="{{ obj.google_map_link|default:'' }}"
+                 placeholder="https://maps.app.goo.gl/…"/>
+        </div>
+
+        <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;">
+          <div class="form-group" style="min-width:140px;">
+            <label class="form-label">Display Order <span style="color:#6b7280;font-size:11px;">(lower = first)</span></label>
+            <input type="number" name="display_order" class="form-control" min="0"
+                   value="{{ obj.display_order|default:0 }}" style="width:120px;"/>
+          </div>
+          <div class="form-group" style="min-width:160px;">
+            <label class="form-label">Status</label>
+            <select name="status" class="form-control" style="width:180px;">
+              <option value="active" {% if obj.status == 'active' or not obj %}selected{% endif %}>Active</option>
+              <option value="inactive" {% if obj.status == 'inactive' %}selected{% endif %}>Inactive</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:10px;margin-top:8px;">
+          <button type="submit" class="btn btn-primary" style="padding:10px 24px;">
+            <i class="fa-solid fa-floppy-disk"></i>
+            {% if obj %}Update Location{% else %}Create Location{% endif %}
+          </button>
+          {% if obj %}
+          <a href="{% url 'dashboard:branch_delete' obj.pk %}" class="btn btn-danger">
+            <i class="fa-solid fa-trash"></i> Delete
+          </a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

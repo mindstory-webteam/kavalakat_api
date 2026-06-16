@@ -74,6 +74,60 @@
       <div class="stat-label">Total Enquiries</div>
     </div>
   </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:rgba(99,102,241,.15);color:#6366f1;">
+      <i class="fa-solid fa-calendar-days"></i>
+    </div>
+    <div>
+      <div class="stat-value">{{ stats.total_events }}</div>
+      <div class="stat-label">Total Events</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:rgba(236,72,153,.15);color:#ec4899;">
+      <i class="fa-solid fa-layer-group"></i>
+    </div>
+    <div>
+      <div class="stat-value">{{ stats.total_event_categories }}</div>
+      <div class="stat-label">Event Categories</div>
+    </div>
+  </div>
+  <div class="stat-card">
+    <div class="stat-icon" style="background:rgba(16,185,129,.15);color:#10b981;">
+      <i class="fa-solid fa-location-dot"></i>
+    </div>
+    <div>
+      <div class="stat-value">{{ stats.total_locations }}</div>
+      <div class="stat-label">Branch Locations</div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="card" style="margin-bottom:24px;">
+  <div class="card-header">
+    <span class="card-title">Quick Actions</span>
+  </div>
+  <div class="card-body" style="display:flex;flex-wrap:wrap;gap:12px;">
+    <a href="{% url 'dashboard:event_create' %}" class="btn btn-primary btn-sm">
+      <i class="fa-solid fa-plus"></i> Add Event
+    </a>
+    <a href="{% url 'dashboard:event_categories' %}" class="btn btn-secondary btn-sm">
+      <i class="fa-solid fa-layer-group"></i> Event Categories
+    </a>
+    <a href="{% url 'dashboard:branch_create' %}" class="btn btn-secondary btn-sm">
+      <i class="fa-solid fa-location-dot"></i> Add Location
+    </a>
+    <a href="{% url 'dashboard:blog_create' %}" class="btn btn-secondary btn-sm">
+      <i class="fa-solid fa-newspaper"></i> New Blog Post
+    </a>
+    <a href="{% url 'dashboard:portfolio_item_create' %}" class="btn btn-secondary btn-sm">
+      <i class="fa-solid fa-briefcase"></i> Add Portfolio Item
+    </a>
+    <a href="{% url 'dashboard:enquiry_list' %}" class="btn btn-secondary btn-sm">
+      <i class="fa-solid fa-envelope"></i> View Enquiries
+    </a>
+  </div>
 </div>
 
 <!-- Charts Row -->
@@ -97,18 +151,18 @@
 </div> {% endcomment %}
 
 <!-- Bottom Row -->
-<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
-  <!-- Recent Enquiries -->
+<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(320px, 1fr));gap:20px;">
+  <!-- Recent Enquiries / Contact Requests -->
   <div class="card">
     <div class="card-header">
-      <span class="card-title">Recent Enquiries</span>
+      <span class="card-title">Recent Contact Requests</span>
       <a href="{% url 'dashboard:enquiry_list' %}" class="btn btn-secondary btn-sm">View All</a>
     </div>
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th>Name</th><th>Type</th><th>Status</th><th>Date</th>
+            <th>Name</th><th>Subject</th><th>Status</th><th>Date</th>
           </tr>
         </thead>
         <tbody>
@@ -120,7 +174,7 @@
               </a>
               <div class="text-muted text-sm">{{ e.email }}</div>
             </td>
-            <td><span class="badge badge-blue">{{ e.get_enquiry_type_display }}</span></td>
+            <td class="text-muted text-sm">{{ e.subject|default:"—"|truncatechars:30 }}</td>
             <td>
               {% if e.status == 'new' %}<span class="badge badge-red">New</span>
               {% elif e.status == 'read' %}<span class="badge badge-orange">Read</span>
@@ -131,6 +185,42 @@
           </tr>
           {% empty %}
           <tr><td colspan="4" class="text-muted" style="text-align:center;padding:20px;">No enquiries yet</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Recent Events -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Recent Events</span>
+      <a href="{% url 'dashboard:event_create' %}" class="btn btn-primary btn-sm">
+        <i class="fa-solid fa-plus"></i> New Event
+      </a>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Event</th><th>Category</th><th>Date</th><th>Status</th></tr>
+        </thead>
+        <tbody>
+          {% for ev in recent_events %}
+          <tr>
+            <td>
+              <a href="{% url 'dashboard:event_edit' ev.pk %}" style="color:var(--text);text-decoration:none;font-weight:500;">
+                {{ ev.event_name|truncatechars:36 }}
+              </a>
+            </td>
+            <td class="text-muted text-sm">{{ ev.category.name|default:"—" }}</td>
+            <td class="text-muted text-sm">{{ ev.event_date|date:"d M Y" }}</td>
+            <td>
+              {% if ev.status == 'active' %}<span class="badge badge-green">Active</span>
+              {% else %}<span class="badge badge-gray">Inactive</span>{% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-muted" style="text-align:center;padding:20px;">No events yet</td></tr>
           {% endfor %}
         </tbody>
       </table>

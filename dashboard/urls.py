@@ -132,4 +132,25 @@ urlpatterns = [
     path('services/<int:pk>/location/nearby/create/',                     views.service_nearby_create,  name='service_nearby_create'),
     path('services/<int:pk>/location/nearby/<int:item_pk>/edit/',         views.service_nearby_edit,    name='service_nearby_edit'),
     path('services/<int:pk>/location/nearby/<int:item_pk>/delete/',       views.service_nearby_delete,  name='service_nearby_delete'),
+
+    # ── EVENTS ──────────────────────────────────────────────────────────────
+    path('events/',                          views.event_list,        name='event_list'),
+    path('events/create/',                   views.event_create,      name='event_create'),
+    path('events/<int:pk>/edit/',            views.event_edit,        name='event_edit'),
+    path('events/<int:pk>/delete/',          views.event_delete,      name='event_delete'),
+
+    # Event Categories
+    path('events/categories/',                    views.event_categories, name='event_categories'),
+    path('events/categories/create/',             views.event_cat_create, name='event_cat_create'),
+    path('events/categories/<int:pk>/edit/',      views.event_cat_edit,   name='event_cat_edit'),
+    path('events/categories/<int:pk>/delete/',    views.event_cat_delete, name='event_cat_delete'),
+
+    path('events/<int:pk>/images/add/',                     views.event_image_add,    name='event_image_add'),
+    path('events/<int:pk>/images/<int:img_pk>/delete/',     views.event_image_delete, name='event_image_delete'),
+
+    # ── BRANCH LOCATIONS ──────────────────────────────────────────────────────
+    path('branches/',                  views.branch_list,   name='branch_list'),
+    path('branches/create/',           views.branch_create, name='branch_create'),
+    path('branches/<int:pk>/edit/',    views.branch_edit,   name='branch_edit'),
+    path('branches/<int:pk>/delete/',  views.branch_delete, name='branch_delete'),
 ]

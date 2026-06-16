@@ -1,7 +1,7 @@
 from django.db import models
 
 
-# ── Contact Info ──────────────────────────────────────────────────────────────
+# ── Contact Info (single global record — social/main details) ─────────────────
 class Contact(models.Model):
     phone          = models.CharField(max_length=20)
     alt_phone      = models.CharField(max_length=20, blank=True)
@@ -26,6 +26,50 @@ class Contact(models.Model):
 
     def __str__(self):
         return f'Contact – {self.email}'
+
+
+# ── Contact Location (one record per branch / office) ─────────────────────────
+class ContactLocation(models.Model):
+    """
+    Each record is one physical branch shown on the Contact Us page.
+    Fields match exactly what the frontend address list needs.
+    """
+    STATUS_ACTIVE   = 'active'
+    STATUS_INACTIVE = 'inactive'
+    STATUS_CHOICES  = [
+        (STATUS_ACTIVE,   'Active'),
+        (STATUS_INACTIVE, 'Inactive'),
+    ]
+
+    branch_name     = models.CharField(max_length=150,
+                                        help_text='e.g. THRISSUR, PALAKKAD, KANNUR')
+    address         = models.TextField()
+    phone_number    = models.CharField(max_length=20, blank=True)
+    whatsapp        = models.CharField(max_length=20, blank=True,
+                                        help_text='WhatsApp number with country code')
+    email           = models.EmailField(blank=True)
+    google_map_link = models.URLField(blank=True,
+                                       help_text='Google Maps share link')
+    working_hours   = models.CharField(max_length=255, blank=True,
+                                        help_text='e.g. Mon–Sat 9 AM – 6 PM')
+    display_order   = models.PositiveSmallIntegerField(default=0,
+                                                        help_text='Lower number shown first')
+    status          = models.CharField(max_length=10, choices=STATUS_CHOICES,
+                                       default=STATUS_ACTIVE)
+    created_at      = models.DateTimeField(auto_now_add=True)
+    updated_at      = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering            = ['display_order', 'branch_name']
+        verbose_name        = 'Contact Location'
+        verbose_name_plural = 'Contact Locations'
+
+    def __str__(self):
+        return self.branch_name
+
+    @property
+    def is_active(self):
+        return self.status == self.STATUS_ACTIVE
 
 
 # ── Career / Job Posting ──────────────────────────────────────────────────────
@@ -58,11 +102,6 @@ class Career(models.Model):
 
 # ── Job Application ───────────────────────────────────────────────────────────
 class JobApplication(models.Model):
-    STATUS_NEW         = 'new'
-    STATUS_REVIEWED    = 'reviewed'
-    STATUS_SHORTLISTED = 'shortlisted'
-    STATUS_REJECTED    = 'rejected'
-    STATUS_HIRED       = 'hired'
     STATUS_CHOICES = [
         ('new',         'New'),
         ('reviewed',    'Reviewed'),
@@ -70,7 +109,6 @@ class JobApplication(models.Model):
         ('rejected',    'Rejected'),
         ('hired',       'Hired'),
     ]
-
     career       = models.ForeignKey(Career, on_delete=models.SET_NULL,
                        null=True, blank=True, related_name='applications')
     name         = models.CharField(max_length=255)
@@ -105,7 +143,6 @@ class Enquiry(models.Model):
         ('replied', 'Replied'),
         ('closed',  'Closed'),
     ]
-
     name           = models.CharField(max_length=255)
     email          = models.EmailField()
     phone          = models.CharField(max_length=20)

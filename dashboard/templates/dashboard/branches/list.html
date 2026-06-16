@@ -1,0 +1,97 @@
+{% extends 'dashboard/base.html' %}
+{% block topbar_actions %}
+<a href="{% url 'dashboard:branch_create' %}" class="btn btn-primary">
+  <i class="fa-solid fa-plus"></i> Add Location
+</a>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <form method="get" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <div class="search-bar">
+        <i class="fa-solid fa-search"></i>
+        <input type="text" name="search" value="{{ search }}" placeholder="Search locations…"/>
+      </div>
+      <select name="status" class="form-control" style="width:140px;" onchange="this.form.submit()">
+        <option value="">All Status</option>
+        <option value="active"   {% if selected_status == 'active' %}selected{% endif %}>Active</option>
+        <option value="inactive" {% if selected_status == 'inactive' %}selected{% endif %}>Inactive</option>
+      </select>
+      <button type="submit" class="btn btn-secondary"><i class="fa-solid fa-filter"></i> Filter</button>
+    </form>
+    <span class="text-muted text-sm">{{ branches.paginator.count }} location{{ branches.paginator.count|pluralize }}</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Branch Name</th>
+          <th>Address</th>
+          <th>Phone</th>
+          <th>WhatsApp</th>
+          <th>Working Hours</th>
+          <th>Order</th>
+          <th style="text-align:center;">Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for branch in branches %}
+        <tr>
+          <td style="font-weight:600;">
+            {{ branch.branch_name }}
+            {% if branch.google_map_link %}
+            <a href="{{ branch.google_map_link }}" target="_blank" rel="noopener"
+               style="margin-left:6px;color:#4da3ff;" title="Open in Maps">
+              <i class="fa-solid fa-map-location-dot"></i>
+            </a>
+            {% endif %}
+          </td>
+          <td class="text-muted text-sm">{{ branch.address|truncatechars:50 }}</td>
+          <td class="text-muted text-sm">{{ branch.phone_number|default:"—" }}</td>
+          <td class="text-muted text-sm">{{ branch.whatsapp|default:"—" }}</td>
+          <td class="text-muted text-sm">{{ branch.working_hours|default:"—" }}</td>
+          <td class="text-muted" style="text-align:center;">{{ branch.display_order }}</td>
+          <td style="text-align:center;">
+            {% if branch.status == 'active' %}
+            <span class="badge badge-green">Active</span>
+            {% else %}
+            <span class="badge badge-gray">Inactive</span>
+            {% endif %}
+          </td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <a href="{% url 'dashboard:branch_edit' branch.pk %}" class="btn btn-secondary btn-sm btn-icon" title="Edit">
+                <i class="fa-solid fa-pen"></i>
+              </a>
+              <a href="{% url 'dashboard:branch_delete' branch.pk %}" class="btn btn-danger btn-sm btn-icon" title="Delete">
+                <i class="fa-solid fa-trash"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="8">
+            <div class="empty-state">
+              <i class="fa-solid fa-location-dot"></i>
+              No locations yet.
+              <a href="{% url 'dashboard:branch_create' %}">Add the first location</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if branches.paginator.num_pages > 1 %}
+  <div class="card-body" style="padding-top:0;">
+    <div class="pagination">
+      {% if branches.has_previous %}<a href="?page={{ branches.previous_page_number }}&search={{ search }}&status={{ selected_status }}">‹</a>{% endif %}
+      <span class="current">{{ branches.number }} / {{ branches.paginator.num_pages }}</span>
+      {% if branches.has_next %}<a href="?page={{ branches.next_page_number }}&search={{ search }}&status={{ selected_status }}">›</a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

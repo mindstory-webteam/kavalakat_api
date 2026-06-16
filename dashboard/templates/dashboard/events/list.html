@@ -1,0 +1,108 @@
+{% extends 'dashboard/base.html' %}
+{% block topbar_actions %}
+<a href="{% url 'dashboard:event_categories' %}" class="btn btn-secondary">
+  <i class="fa-solid fa-layer-group"></i> Categories
+</a>
+<a href="{% url 'dashboard:event_create' %}" class="btn btn-primary">
+  <i class="fa-solid fa-plus"></i> Add Event
+</a>
+{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-header">
+    <form method="get" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+      <div class="search-bar">
+        <i class="fa-solid fa-search"></i>
+        <input type="text" name="search" value="{{ search }}" placeholder="Search events…"/>
+      </div>
+      <select name="category" class="form-control" style="width:180px;" onchange="this.form.submit()">
+        <option value="">All Categories</option>
+        {% for cat in categories %}
+        <option value="{{ cat.pk }}" {% if selected_category == cat.pk|stringformat:"s" %}selected{% endif %}>{{ cat.name }}</option>
+        {% endfor %}
+      </select>
+      <select name="status" class="form-control" style="width:140px;" onchange="this.form.submit()">
+        <option value="">All Status</option>
+        <option value="published" {% if selected_status == 'published' %}selected{% endif %}>Published</option>
+        <option value="draft"     {% if selected_status == 'draft' %}selected{% endif %}>Draft</option>
+      </select>
+      <button type="submit" class="btn btn-secondary"><i class="fa-solid fa-filter"></i> Filter</button>
+    </form>
+    <span class="text-muted text-sm">{{ events.paginator.count }} event{{ events.paginator.count|pluralize }}</span>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Image</th>
+          <th>Event Name</th>
+          <th>Category</th>
+          <th>Event Date</th>
+          <th style="text-align:center;">Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for event in events %}
+        <tr>
+          <td>
+            {% if event.featured_image %}
+            <img src="{{ event.featured_image.url }}" style="width:44px;height:44px;border-radius:6px;object-fit:cover;"/>
+            {% else %}
+            <div style="width:44px;height:44px;border-radius:6px;background:#1e2235;display:flex;align-items:center;justify-content:center;">
+              <i class="fa-solid fa-image" style="font-size:14px;color:#374151;"></i>
+            </div>
+            {% endif %}
+          </td>
+          <td>
+            <div style="font-weight:600;">{{ event.event_name|truncatechars:48 }}</div>
+            <div class="text-muted text-sm">{{ event.description|truncatechars:60 }}</div>
+          </td>
+          <td class="text-muted text-sm">{{ event.category.name|default:"—" }}</td>
+          <td class="text-muted text-sm">
+            {{ event.event_date|date:"d M Y, H:i" }}
+            {% if event.is_upcoming %}<div class="badge badge-blue" style="margin-top:4px;">Upcoming</div>{% else %}<div class="badge badge-gray" style="margin-top:4px;">Past</div>{% endif %}
+          </td>
+          <td style="text-align:center;">
+            {% if event.status == 'published' %}
+            <span class="badge badge-green">Published</span>
+            {% else %}
+            <span class="badge badge-yellow">Draft</span>
+            {% endif %}
+          </td>
+          <td>
+            <div style="display:flex;gap:6px;">
+              <a href="{% url 'dashboard:event_edit' event.pk %}" class="btn btn-secondary btn-sm btn-icon" title="Edit">
+                <i class="fa-solid fa-pen"></i>
+              </a>
+              <a href="{% url 'dashboard:event_delete' event.pk %}" class="btn btn-danger btn-sm btn-icon" title="Delete">
+                <i class="fa-solid fa-trash"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6">
+            <div class="empty-state">
+              <i class="fa-solid fa-calendar-days"></i>
+              No events found.
+              <a href="{% url 'dashboard:event_create' %}">Create the first event</a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% if events.paginator.num_pages > 1 %}
+  <div class="card-body" style="padding-top:0;">
+    <div class="pagination">
+      {% if events.has_previous %}<a href="?page={{ events.previous_page_number }}&search={{ search }}&category={{ selected_category }}&status={{ selected_status }}">‹</a>{% endif %}
+      <span class="current">{{ events.number }} / {{ events.paginator.num_pages }}</span>
+      {% if events.has_next %}<a href="?page={{ events.next_page_number }}&search={{ search }}&category={{ selected_category }}&status={{ selected_status }}">›</a>{% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}
