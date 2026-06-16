@@ -44,8 +44,13 @@ class APIRootView(APIView):
 
                 # ── Contact & Enquiries ───────────────────────
                 'contact':            f'{base}contact/',
+                'contact_locations':  f'{base}contact-locations/',
                 'enquiry':            f'{base}enquiry/',
                 'careers':            f'{base}careers/',
+
+                # ── Events ────────────────────────────────────
+                'event_categories':   f'{base}event-categories/',
+                'events':             f'{base}events/',
 
                 # ── AI ────────────────────────────────────────
                 'ai_generate_blog':   f'{base}ai/generate-blog/',
