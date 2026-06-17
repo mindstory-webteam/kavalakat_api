@@ -1,4 +1,4 @@
------------------------------------digital ocean--------------------------------
+# -----------------------------------digital ocean--------------------------------
 
 import os
 from pathlib import Path
@@ -19,15 +19,13 @@ ALLOWED_HOSTS = os.environ.get(
     'localhost,127.0.0.1,api.kavalakat.com'
 ).split(',')
 
-# ---------(ANTHROPIC)--------
-
+# ── Anthropic ─────────────────────────────────────────────────────────────────
 ANTHROPIC_API_KEY = os.environ.get('ANTHROPIC_API_KEY', '')
 
 # ── CSRF Trusted Origins ──────────────────────────────────────────────────────
-# Required for Django 4.0+ — fixes 403 CSRF error on api.kavalakat.com
 CSRF_TRUSTED_ORIGINS = os.environ.get(
     'CSRF_TRUSTED_ORIGINS',
-    'https://api.kavalakat.com,https://tan-rail-168119.hostingersite.com'
+    'https://api.kavalakat.com,https://kavalakat-live.vercel.app,https://violet-magpie-778268.hostingersite.com'
 ).split(',')
 
 # ── Installed Apps ────────────────────────────────────────────────────────────
@@ -55,15 +53,15 @@ INSTALLED_APPS = [
     'ai_module.apps.AiModuleConfig',
     'dashboard.apps.DashboardConfig',
     'services.apps.ServicesConfig',
-     'chat.apps.ChatConfig',
+    'chat.apps.ChatConfig',
     'events.apps.EventsConfig',
 ]
 
 # ── Middleware ────────────────────────────────────────────────────────────────
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware',          # ← MUST be first
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
-    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -94,8 +92,6 @@ TEMPLATES = [
 ]
 
 # ── Database ──────────────────────────────────────────────────────────────────
-# LOCAL:         postgresql://kavalakat_user1:kavalakat@localhost:5432/kavalakat_new
-# DIGITALOCEAN:  postgresql://kavalakat_user:password@localhost:5432/kavalakat_db
 DATABASE_URL = os.environ.get(
     'DATABASE_URL',
     'postgresql://kavalakat_user1:kavalakat@localhost:5432/kavalakat_new'
@@ -103,8 +99,8 @@ DATABASE_URL = os.environ.get(
 DATABASES = {
     'default': dj_database_url.parse(
         DATABASE_URL,
-        conn_max_age=60,   # keep connections alive 60 sec (safe for Droplet)
-        ssl_require=False, # no SSL needed for local PostgreSQL on same server
+        conn_max_age=60,
+        ssl_require=False,
     )
 }
 
@@ -154,11 +150,18 @@ SIMPLE_JWT = {
 # ── CORS ──────────────────────────────────────────────────────────────────────
 CORS_ALLOWED_ORIGINS = os.environ.get(
     'CORS_ALLOWED_ORIGINS',
-    'http://localhost:3000,http://127.0.0.1:3000,"https://kavalakat-live.vercel.app",https://violet-magpie-778268.hostingersite.com/'
+    'http://localhost:3000,http://127.0.0.1:3000,https://kavalakat-live.vercel.app,https://violet-magpie-778268.hostingersite.com'
 ).split(',')
+
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_METHODS     = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
-CORS_ALLOW_HEADERS     = ['accept', 'authorization', 'content-type', 'origin', 'x-requested-with']
+CORS_ALLOW_HEADERS     = [
+    'accept',
+    'authorization',
+    'content-type',
+    'origin',
+    'x-requested-with',
+]
 
 # ── Static / Media ────────────────────────────────────────────────────────────
 STATIC_URL          = '/static/'
@@ -179,26 +182,21 @@ MESSAGE_STORAGE    = 'django.contrib.messages.storage.session.SessionStorage'
 OPENAI_API_KEY = os.environ.get('OPENAI_API_KEY', '')
 
 # ── Security Settings ─────────────────────────────────────────────────────────
-# Running on DigitalOcean Droplet with Nginx (HTTP only for now)
-# Enable HTTPS settings only after adding SSL certificate with Certbot
 if not DEBUG:
-    # Basic security headers — safe for HTTP Droplet
     SECURE_CONTENT_TYPE_NOSNIFF = True
     X_FRAME_OPTIONS             = 'DENY'
 
-    # ── Disable HTTPS enforcement (no SSL certificate yet) ────────────────────
+    # Disable HTTPS enforcement (no SSL certificate yet)
     SECURE_SSL_REDIRECT            = False
-    SECURE_HSTS_SECONDS            = 0    # set to 31536000 AFTER adding SSL
+    SECURE_HSTS_SECONDS            = 0     # set to 31536000 AFTER adding SSL
     SECURE_HSTS_INCLUDE_SUBDOMAINS = False
     SECURE_PROXY_SSL_HEADER        = None
 
-    # ── Cookies — use False until HTTPS is set up ─────────────────────────────
-    SESSION_COOKIE_SECURE  = False  # set True after SSL
+    # Cookies — set to True after SSL is configured
+    SESSION_COOKIE_SECURE  = False
     SESSION_COOKIE_SAMESITE = 'Lax'
-    CSRF_COOKIE_SECURE     = False  # set True after SSL
+    CSRF_COOKIE_SECURE     = False
     CSRF_COOKIE_SAMESITE   = 'Lax'
-
-# ── Logging ───────────────────────────────────────────────────────────────────
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 LOGGING = {
@@ -235,13 +233,11 @@ LOGGING = {
             'level': 'WARNING',
             'propagate': False,
         },
-
         'ai_module': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
             'propagate': False,
         },
-
         'chat': {
             'handlers': ['console', 'file'],
             'level': 'DEBUG',
