@@ -580,12 +580,14 @@ select.form-control option { background: var(--surface2); color: var(--text); }
       <i class="fa-solid fa-address-book"></i> Contact Info
     </a>
 
-    <!-- BRANCH LOCATIONS -->
-    <div class="nav-section">Locations</div>
     <a href="{% url 'dashboard:branch_list' %}"
        class="nav-item {% if url_name in 'branch_list branch_create branch_edit branch_delete' %}active{% endif %}">
       <i class="fa-solid fa-location-dot"></i> Contact Locations
     </a>
+
+    <!-- BRANCH LOCATIONS -->
+    {% comment %} <div class="nav-section">Locations</div> {% endcomment %}
+    
     {% endwith %}
 
   </nav>
