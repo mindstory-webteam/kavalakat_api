@@ -60,3 +60,37 @@ class ChatbotFAQ(models.Model):
 
     def keyword_list(self):
         return [k.strip().lower() for k in self.keywords.split(',') if k.strip()]
+
+
+class Lead(models.Model):
+    """
+    A lead captured from the chatbot widget (name + contact info + what
+    they asked about). Shown on the dashboard's "Chatbot Leads" screen.
+    """
+    STATUS_PENDING  = 'pending'
+    STATUS_RESOLVED = 'resolved'
+    STATUS_CHOICES  = [
+        (STATUS_PENDING,  'Pending'),
+        (STATUS_RESOLVED, 'Resolved'),
+    ]
+
+    session    = models.ForeignKey(
+        ChatSession, on_delete=models.SET_NULL,
+        related_name='leads', null=True, blank=True,
+    )
+    name       = models.CharField(max_length=150)
+    phone      = models.CharField(max_length=30, blank=True)
+    email      = models.EmailField(blank=True)
+    query      = models.TextField(help_text='What the visitor asked / was interested in.')
+    status     = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    source     = models.CharField(max_length=50, default='chatbot')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = 'Chatbot Lead'
+        verbose_name_plural = 'Chatbot Leads'
+
+    def __str__(self):
+        return f'{self.name} ({self.get_status_display()})'

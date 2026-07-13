@@ -524,6 +524,11 @@ select.form-control option { background: var(--surface2); color: var(--text); }
       <i class="fa-solid fa-envelope"></i> Enquiries
       {% if new_enquiry_count %}<span class="nav-badge">{{ new_enquiry_count }}</span>{% endif %}
     </a>
+    <a href="{% url 'dashboard:leads_list' %}"
+       class="nav-item {% if url_name in 'leads_list' %}active{% endif %}">
+      <i class="fa-solid fa-user-plus"></i> Chatbot Leads
+      {% if pending_lead_count %}<span class="nav-badge">{{ pending_lead_count }}</span>{% endif %}
+    </a>
 
     <!-- SETTINGS -->
     <div class="nav-section">About Page</div>

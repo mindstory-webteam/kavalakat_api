@@ -1,0 +1,183 @@
+{% extends 'dashboard/base.html' %}
+{% block content %}
+
+<div class="card" style="margin-bottom:20px;">
+  <div class="card-body" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+    <div>
+      <h2 style="margin:0;font-size:1.35rem;">Chatbot Leads</h2>
+      <p class="text-muted" style="margin:4px 0 0;">Manage leads captured from the chatbot</p>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+      <span class="badge badge-orange" style="padding:8px 14px;font-size:13px;">
+        <div style="font-weight:700;font-size:15px;">{{ counts.pending }}</div>
+        <div style="font-size:11px;opacity:.85;">Pending</div>
+      </span>
+      <span class="badge" style="padding:8px 14px;font-size:13px;background:rgba(59,130,246,.12);color:#3b82f6;">
+        <div style="font-weight:700;font-size:15px;">{{ counts.resolved }}</div>
+        <div style="font-size:11px;opacity:.85;">Resolved</div>
+      </span>
+      <a href="{% url 'dashboard:leads_export_excel' %}?status={{ status }}&search={{ search }}"
+         class="btn btn-secondary">
+        <i class="fa-solid fa-file-excel" style="color:#22c55e;"></i> Excel
+      </a>
+      <a href="{% url 'dashboard:leads_export_pdf' %}?status={{ status }}&search={{ search }}"
+         class="btn btn-secondary">
+        <i class="fa-solid fa-file-pdf" style="color:#ef4444;"></i> PDF
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header">
+    <form method="get" style="display:flex;gap:10px;flex-wrap:wrap;">
+      <div class="search-bar">
+        <i class="fa-solid fa-search"></i>
+        <input type="text" name="search" value="{{ search }}" placeholder="Search leads…"/>
+      </div>
+      <select name="status" onchange="this.form.submit()"
+              style="min-width:160px;border:1px solid var(--border,#e2e8f0);border-radius:8px;padding:8px 12px;font-size:13px;background:#fff;color:inherit;">
+        <option value="">All Statuses</option>
+        <option value="pending"  {% if status == 'pending'  %}selected{% endif %}>Pending</option>
+        <option value="resolved" {% if status == 'resolved' %}selected{% endif %}>Resolved</option>
+      </select>
+      <button class="btn btn-secondary" type="submit">
+        <i class="fa-solid fa-search"></i>
+      </button>
+    </form>
+    <span class="text-muted text-sm">{{ leads.paginator.count }} result{{ leads.paginator.count|pluralize }}</span>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Name</th>
+          <th>Contact Info</th>
+          <th>Query</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for lead in leads %}
+        <tr id="lead-row-{{ lead.pk }}">
+          <td class="text-muted text-sm">{{ lead.created_at|date:"n/j/Y" }}</td>
+          <td style="font-weight:600;">{{ lead.name }}</td>
+          <td>
+            {% if lead.phone %}<div class="text-sm">{{ lead.phone }}</div>{% endif %}
+            {% if lead.email %}<div class="text-muted text-sm">{{ lead.email }}</div>{% endif %}
+            {% if not lead.phone and not lead.email %}<span class="text-muted text-sm">—</span>{% endif %}
+          </td>
+          <td>
+            <button type="button" class="btn btn-secondary btn-sm" onclick="showQuery('{{ lead.pk }}')">
+              <i class="fa-solid fa-eye"></i> View
+            </button>
+            <div id="query-text-{{ lead.pk }}" style="display:none;">{{ lead.query }}</div>
+          </td>
+          <td>
+            <select class="lead-status-select status-{{ lead.status }}"
+                    data-pk="{{ lead.pk }}" onchange="updateLeadStatus(this)">
+              <option value="pending"  {% if lead.status == 'pending'  %}selected{% endif %}>Pending</option>
+              <option value="resolved" {% if lead.status == 'resolved' %}selected{% endif %}>Resolved</option>
+            </select>
+          </td>
+          <td>
+            <form method="post" action="{% url 'dashboard:lead_delete' lead.pk %}"
+                  onsubmit="return confirm('Delete lead from {{ lead.name }}?')" style="display:inline;">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-danger btn-sm btn-icon" title="Delete">
+                <i class="fa-solid fa-trash"></i>
+              </button>
+            </form>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6">
+            <div class="empty-state">
+              <i class="fa-solid fa-user-plus"></i>
+              No leads yet. Leads submitted through the chatbot will show up here.
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if leads.has_other_pages %}
+  <div class="card-body">
+    <div class="pagination">
+      {% if leads.has_previous %}
+      <a href="?page={{ leads.previous_page_number }}&status={{ status }}&search={{ search }}">‹</a>
+      {% endif %}
+      <span class="current">{{ leads.number }} / {{ leads.paginator.num_pages }}</span>
+      {% if leads.has_next %}
+      <a href="?page={{ leads.next_page_number }}&status={{ status }}&search={{ search }}">›</a>
+      {% endif %}
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Simple query preview modal -->
+<div id="query-modal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:2000;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:12px;max-width:480px;width:92%;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <h3 style="margin:0;font-size:1.05rem;">Visitor Query</h3>
+      <button onclick="closeQueryModal()" style="background:none;border:none;font-size:18px;cursor:pointer;color:#94a3b8;">✕</button>
+    </div>
+    <p id="query-modal-text" style="white-space:pre-wrap;line-height:1.6;color:#334155;"></p>
+  </div>
+</div>
+
+<style>
+.lead-status-select {
+  border: none;
+  border-radius: 20px;
+  padding: 6px 28px 6px 12px;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  appearance: none;
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23555'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+}
+.lead-status-select.status-pending  { background-color: rgba(249,115,22,.15); color: #f97316; }
+.lead-status-select.status-resolved { background-color: rgba(59,130,246,.15); color: #3b82f6; }
+</style>
+
+<script>
+function showQuery(pk) {
+  const text = document.getElementById('query-text-' + pk).textContent;
+  document.getElementById('query-modal-text').textContent = text;
+  document.getElementById('query-modal').style.display = 'flex';
+}
+function closeQueryModal() {
+  document.getElementById('query-modal').style.display = 'none';
+}
+function getCookie(name) {
+  const v = document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)');
+  return v ? v.pop() : '';
+}
+function updateLeadStatus(select) {
+  const pk = select.dataset.pk;
+  const newStatus = select.value;
+  select.classList.remove('status-pending', 'status-resolved');
+  select.classList.add('status-' + newStatus);
+  fetch(`/dashboard/leads/${pk}/status/`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-CSRFToken': getCookie('csrftoken'),
+    },
+    body: `status=${newStatus}`,
+  }).catch(() => alert('Could not update status. Please try again.'));
+}
+</script>
+
+{% endblock %}

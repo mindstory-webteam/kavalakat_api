@@ -2,7 +2,7 @@
 chat/admin.py
 """
 from django.contrib import admin
-from .models import ChatSession, ChatMessage, ChatbotFAQ
+from .models import ChatSession, ChatMessage, ChatbotFAQ, Lead
 
 
 class ChatMessageInline(admin.TabularInline):
@@ -43,6 +43,20 @@ class ChatMessageAdmin(admin.ModelAdmin):
 
     def has_add_permission(self, request):
         return False
+
+
+@admin.register(Lead)
+class LeadAdmin(admin.ModelAdmin):
+    list_display    = ['name', 'phone', 'email', 'short_query', 'status', 'created_at']
+    list_editable   = ['status']
+    list_filter     = ['status', 'source']
+    search_fields   = ['name', 'phone', 'email', 'query']
+    readonly_fields = ['session', 'created_at', 'updated_at']
+    ordering        = ['-created_at']
+
+    def short_query(self, obj):
+        return obj.query[:60]
+    short_query.short_description = 'Query'
 
 
 @admin.register(ChatbotFAQ)

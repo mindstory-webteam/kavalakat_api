@@ -2,7 +2,7 @@
 chat/serializers.py
 """
 from rest_framework import serializers
-from .models import ChatSession, ChatMessage
+from .models import ChatSession, ChatMessage, Lead
 
 
 class MessageInputSerializer(serializers.Serializer):
@@ -35,3 +35,36 @@ class ChatSessionSerializer(serializers.ModelSerializer):
 
     def get_message_count(self, obj):
         return obj.messages.count()
+
+
+class LeadCreateSerializer(serializers.Serializer):
+    """
+    Used by the public chatbot widget to submit a lead.
+    """
+    session_key = serializers.CharField(max_length=120, required=False, allow_blank=True)
+    name        = serializers.CharField(max_length=150)
+    phone       = serializers.CharField(max_length=30, required=False, allow_blank=True)
+    email       = serializers.EmailField(required=False, allow_blank=True)
+    query       = serializers.CharField(max_length=2000, required=False, allow_blank=True)
+
+    def validate(self, data):
+        if not data.get('phone') and not data.get('email'):
+            raise serializers.ValidationError(
+                'Please provide at least a phone number or an email address.'
+            )
+        return data
+
+    def validate_name(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError('Name is required.')
+        return value
+
+
+class LeadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model  = Lead
+        fields = [
+            'id', 'name', 'phone', 'email', 'query',
+            'status', 'source', 'created_at', 'updated_at',
+        ]

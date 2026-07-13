@@ -153,4 +153,11 @@ urlpatterns = [
     path('branches/create/',           views.branch_create, name='branch_create'),
     path('branches/<int:pk>/edit/',    views.branch_edit,   name='branch_edit'),
     path('branches/<int:pk>/delete/',  views.branch_delete, name='branch_delete'),
+
+    # ── CHATBOT LEADS ────────────────────────────────────────────────────────
+    path('leads/',                       views.leads_list,          name='leads_list'),
+    path('leads/<int:pk>/status/',       views.lead_status_update,  name='lead_status_update'),
+    path('leads/<int:pk>/delete/',       views.lead_delete,         name='lead_delete'),
+    path('leads/export/excel/',          views.leads_export_excel,  name='leads_export_excel'),
+    path('leads/export/pdf/',            views.leads_export_pdf,    name='leads_export_pdf'),
 ]

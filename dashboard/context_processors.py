@@ -5,5 +5,10 @@ def dashboard_globals(request):
             count = Enquiry.objects.filter(status='new').count()
         except Exception:
             count = 0
-        return {'new_enquiry_count': count}
+        try:
+            from chat.models import Lead
+            pending_lead_count = Lead.objects.filter(status=Lead.STATUS_PENDING).count()
+        except Exception:
+            pending_lead_count = 0
+        return {'new_enquiry_count': count, 'pending_lead_count': pending_lead_count}
     return {}
