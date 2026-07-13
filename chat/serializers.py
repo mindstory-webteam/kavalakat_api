@@ -1,8 +1,9 @@
 """
 chat/serializers.py
 """
+import re
 from rest_framework import serializers
-from .models import ChatSession, ChatMessage, Lead
+from .models import ChatSession, ChatMessage, ChatLead
 
 
 class MessageInputSerializer(serializers.Serializer):
@@ -37,34 +38,32 @@ class ChatSessionSerializer(serializers.ModelSerializer):
         return obj.messages.count()
 
 
-class LeadCreateSerializer(serializers.Serializer):
-    """
-    Used by the public chatbot widget to submit a lead.
-    """
-    session_key = serializers.CharField(max_length=120, required=False, allow_blank=True)
-    name        = serializers.CharField(max_length=150)
-    phone       = serializers.CharField(max_length=30, required=False, allow_blank=True)
-    email       = serializers.EmailField(required=False, allow_blank=True)
-    query       = serializers.CharField(max_length=2000, required=False, allow_blank=True)
-
-    def validate(self, data):
-        if not data.get('phone') and not data.get('email'):
-            raise serializers.ValidationError(
-                'Please provide at least a phone number or an email address.'
-            )
-        return data
+# ── NEW: Chat Lead ────────────────────────────────────────────────────────────
+class ChatLeadSerializer(serializers.ModelSerializer):
+    class Meta:
+        model  = ChatLead
+        fields = [
+            'id', 'session_key', 'name', 'phone', 'email',
+            'query', 'status', 'created_at',
+        ]
+        read_only_fields = ['id', 'status', 'created_at']
+        extra_kwargs     = {'session_key': {'required': False, 'allow_blank': True}}
 
     def validate_name(self, value):
         value = value.strip()
-        if not value:
-            raise serializers.ValidationError('Name is required.')
+        if len(value) < 2:
+            raise serializers.ValidationError('Please provide a valid name.')
         return value
 
+    def validate_phone(self, value):
+        value = re.sub(r'[\s\-]', '', value.strip())
+        # Indian 10-digit mobile, with optional +91 / 91 / 0 prefix
+        if not re.fullmatch(r'(\+91|91|0)?[6-9]\d{9}', value):
+            raise serializers.ValidationError('Please provide a valid 10-digit mobile number.')
+        return value
 
-class LeadSerializer(serializers.ModelSerializer):
-    class Meta:
-        model  = Lead
-        fields = [
-            'id', 'name', 'phone', 'email', 'query',
-            'status', 'source', 'created_at', 'updated_at',
-        ]
+    def validate_query(self, value):
+        value = value.strip()
+        if not value:
+            raise serializers.ValidationError('Query cannot be empty.')
+        return value

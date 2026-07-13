@@ -1,0 +1,149 @@
+{% extends 'dashboard/base.html' %}
+
+{% block topbar_actions %}
+<a href="{% url 'dashboard:chat_lead_list' %}" class="btn btn-secondary">
+  <i class="fa-solid fa-arrow-left"></i> Back
+</a>
+{% endblock %}
+
+{% block content %}
+<div style="display:grid;grid-template-columns:1fr 300px;gap:20px;align-items:start;">
+
+  <!-- Left: Query + Chat Transcript + Admin Note -->
+  <div>
+
+    <!-- Query -->
+    <div class="card mb-4" style="margin-bottom:20px;">
+      <div class="card-header"><span class="card-title">Lead Query</span></div>
+      <div class="card-body">
+        <div style="font-size:14px;line-height:1.8;color:var(--text);white-space:pre-wrap;">{{ obj.query }}</div>
+      </div>
+    </div>
+
+    <!-- Chat Transcript -->
+    <div class="card" style="margin-bottom:20px;">
+      <div class="card-header">
+        <span class="card-title">Chat Transcript</span>
+        {% if obj.session_key %}
+        <span class="text-muted text-sm">Session: {{ obj.session_key|truncatechars:20 }}</span>
+        {% endif %}
+      </div>
+      <div class="card-body" style="max-height:420px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;">
+        {% for m in chat_messages %}
+        <div style="display:flex;justify-content:{% if m.role == 'user' %}flex-end{% else %}flex-start{% endif %};">
+          <div style="max-width:75%;
+                      padding:9px 13px;font-size:13px;line-height:1.6;
+                      {% if m.role == 'user' %}
+                        background:#f97316;color:#fff;
+                        border-radius:14px 14px 4px 14px;
+                      {% else %}
+                        background:#f1f5f9;color:var(--text);
+                        border:1px solid #e2e8f0;
+                        border-radius:14px 14px 14px 4px;
+                      {% endif %}
+                      white-space:pre-wrap;word-break:break-word;">
+            {{ m.content }}
+            <div style="font-size:10px;opacity:.55;margin-top:4px;
+                        text-align:{% if m.role == 'user' %}right{% else %}left{% endif %};">
+              {{ m.created_at|date:"d M, H:i" }}
+            </div>
+          </div>
+        </div>
+        {% empty %}
+        <div class="empty-state">
+          <i class="fa-solid fa-comments"></i>
+          No chat messages found for this lead's session.
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Admin Note -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Admin Note</span></div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="status" value="{{ obj.status }}"/>
+          <textarea name="admin_note" class="form-control" rows="5"
+                    placeholder="Internal notes about this lead…">{{ obj.admin_note }}</textarea>
+          <button type="submit" class="btn btn-primary" style="margin-top:12px;">
+            <i class="fa-solid fa-floppy-disk"></i> Save Note
+          </button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Right: Lead Info + Status -->
+  <div style="display:flex;flex-direction:column;gap:16px;">
+
+    <!-- Lead Info -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Lead Info</span></div>
+      <div class="card-body" style="display:flex;flex-direction:column;gap:14px;">
+
+        <div>
+          <div class="text-muted text-sm">Full Name</div>
+          <div style="font-weight:600;margin-top:3px;">{{ obj.name }}</div>
+        </div>
+
+        <div>
+          <div class="text-muted text-sm">Phone</div>
+          <a href="tel:{{ obj.phone }}" style="color:#f97316;margin-top:3px;display:block;">
+            {{ obj.phone }}
+          </a>
+        </div>
+
+        <div>
+          <div class="text-muted text-sm">Email</div>
+          <a href="mailto:{{ obj.email }}" style="color:#f97316;word-break:break-all;margin-top:3px;display:block;">
+            {{ obj.email }}
+          </a>
+        </div>
+
+        <div>
+          <div class="text-muted text-sm">WhatsApp</div>
+          <a href="https://wa.me/91{{ obj.phone }}" target="_blank" rel="noopener"
+             style="color:#25D366;margin-top:3px;display:block;">
+            <i class="fa-brands fa-whatsapp"></i> Message on WhatsApp
+          </a>
+        </div>
+
+        <div>
+          <div class="text-muted text-sm">Received</div>
+          <div style="margin-top:3px;">{{ obj.created_at|date:"d M Y, H:i" }}</div>
+        </div>
+
+        {% if obj.ip_address %}
+        <div>
+          <div class="text-muted text-sm">IP Address</div>
+          <div style="margin-top:3px;font-size:12px;">{{ obj.ip_address }}</div>
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div class="card">
+      <div class="card-header"><span class="card-title">Status</span></div>
+      <div class="card-body">
+        <form method="post">
+          {% csrf_token %}
+          <input type="hidden" name="admin_note" value="{{ obj.admin_note }}"/>
+          <select name="status" class="form-control">
+            <option value="pending"  {% if obj.status == 'pending'  %}selected{% endif %}>🟡 Pending</option>
+            <option value="resolved" {% if obj.status == 'resolved' %}selected{% endif %}>🟢 Resolved</option>
+          </select>
+          <button type="submit" class="btn btn-primary" style="margin-top:12px;width:100%;">
+            <i class="fa-solid fa-check"></i> Update Status
+          </button>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

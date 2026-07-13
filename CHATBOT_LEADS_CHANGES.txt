@@ -1,0 +1,45 @@
+CHATBOT LEADS — WHAT WAS UPDATED IN THIS PROJECT
+════════════════════════════════════════════════
+
+BACKEND (chat app)
+  chat/models.py           → added ChatLead model (Pending / Resolved)
+  chat/serializers.py      → added ChatLeadSerializer (phone + email validation)
+  chat/views.py            → added ChatLeadView: POST /api/chat/lead/ (public)
+                             + ChatLeadViewSet: GET /api/chat/leads/ (admin)
+  chat/urls.py             → added lead routes
+  chat/admin.py            → registered ChatLead in Django admin
+  chat/migrations/0003_chatlead.py → ready migration
+
+DASHBOARD
+  dashboard/chat_lead_views.py   → NEW standalone module (list, detail,
+                                   delete, AJAX status, Excel & PDF export)
+  dashboard/urls.py              → wired 6 chat-leads routes
+  dashboard/context_processors.py→ pending-lead sidebar badge count
+  dashboard/templates/dashboard/base.html → "Chatbot Leads" sidebar link
+  dashboard/templates/dashboard/home.html → New Chatbot Leads stat card,
+                                   Quick Action button, Recent Chatbot Leads table
+  dashboard/views.py (dashboard_home only) → lead stats + recent leads
+  dashboard/templates/dashboard/chat_leads/
+      list.html    → screenshot design: Pending/Resolved counts, Excel/PDF,
+                     search, status filter, inline status dropdown, delete
+      detail.html  → query + full chat transcript + WhatsApp + note + status
+      print.html   → PDF export (printable page)
+
+FRONTEND
+  frontend/ChatbotWidget.tsx → full widget: Welcome → Name → Phone → Email
+                               → Query → lead POSTed to /api/chat/lead/
+                               → then AI chat via /api/chat/
+
+TO DEPLOY
+  1. python manage.py migrate chat        (creates the chat_chatlead table)
+  2. (optional) pip install openpyxl      (real .xlsx export; CSV fallback otherwise)
+  3. Restart the server → open /dashboard/chat-leads/
+  4. Use frontend/ChatbotWidget.tsx in your Next.js site:
+       <ChatbotWidget apiBase="https://api.kavalakat.com/api" />
+
+NOTE: your events app has a pre-existing duplicate-table quirk
+(EventImage is created in both 0001 and 0002). On a FRESH database run:
+    python manage.py migrate events 0001
+    python manage.py migrate events 0002 --fake
+    python manage.py migrate
+On your existing database this does not matter.

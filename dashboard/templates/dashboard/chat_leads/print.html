@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Chatbot Leads — Export</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; padding: 32px; color: #0f172a; }
+    h1 { font-size: 20px; margin-bottom: 4px; }
+    .meta { color: #64748b; font-size: 12px; margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th { background: #f97316; color: #fff; text-align: left; padding: 8px 10px; }
+    td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+    tr:nth-child(even) td { background: #f8fafc; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+    .pending  { background: #fef9c3; color: #b45309; }
+    .resolved { background: #ccfbf1; color: #0f766e; }
+    .no-print { margin-bottom: 18px; }
+    .no-print button {
+      background: #f97316; color: #fff; border: none; border-radius: 8px;
+      padding: 10px 22px; font-size: 14px; font-weight: 600; cursor: pointer;
+    }
+    @media print { .no-print { display: none; } body { padding: 0; } }
+  </style>
+</head>
+<body>
+
+  <div class="no-print">
+    <button onclick="window.print()">🖨️ Print / Save as PDF</button>
+  </div>
+
+  <h1>Chatbot Leads</h1>
+  <div class="meta">
+    Generated: {{ generated_at|date:"d M Y, H:i" }}
+    {% if status %} · Status: {{ status|title }}{% endif %}
+    {% if search %} · Search: "{{ search }}"{% endif %}
+    · Total: {{ leads|length }}
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th style="width:110px;">Date</th>
+        <th style="width:140px;">Name</th>
+        <th style="width:110px;">Phone</th>
+        <th style="width:180px;">Email</th>
+        <th>Query</th>
+        <th style="width:80px;">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for l in leads %}
+      <tr>
+        <td>{{ l.created_at|date:"d-m-Y H:i" }}</td>
+        <td><strong>{{ l.name }}</strong></td>
+        <td>{{ l.phone }}</td>
+        <td>{{ l.email }}</td>
+        <td>{{ l.query }}</td>
+        <td>
+          <span class="badge {{ l.status }}">{{ l.get_status_display }}</span>
+        </td>
+      </tr>
+      {% empty %}
+      <tr><td colspan="6" style="text-align:center;padding:24px;color:#64748b;">No leads found.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <script>window.addEventListener('load', () => setTimeout(() => window.print(), 400));</script>
+</body>
+</html>

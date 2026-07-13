@@ -48,6 +48,19 @@ def dashboard_home(request):
     except Exception:
         new_applications = 0
 
+    # ── Chatbot lead stats ──
+    try:
+        from chat.models import ChatLead
+        pending_chat_leads  = ChatLead.objects.filter(status='pending').count()
+        resolved_chat_leads = ChatLead.objects.filter(status='resolved').count()
+        total_chat_leads    = ChatLead.objects.count()
+        recent_chat_leads   = ChatLead.objects.order_by('-created_at')[:5]
+    except Exception:
+        pending_chat_leads  = 0
+        resolved_chat_leads = 0
+        total_chat_leads    = 0
+        recent_chat_leads   = []
+
     stats = {
         'total_posts':        Post.objects.count(),
         'published_posts':    Post.objects.filter(status='published').count(),
@@ -63,6 +76,10 @@ def dashboard_home(request):
         'total_event_categories': EventCategory.objects.count(),
         'total_locations':        ContactLocation.objects.count(),
         'active_locations':       ContactLocation.objects.filter(status=ContactLocation.STATUS_ACTIVE).count(),
+        # ── Chatbot leads ──
+        'new_chat_leads':      pending_chat_leads,
+        'resolved_chat_leads': resolved_chat_leads,
+        'total_chat_leads':    total_chat_leads,
     }
     recent_enquiries = Enquiry.objects.order_by('-created_at')[:5]
     recent_posts     = Post.objects.select_related('category').order_by('-created_at')[:5]
@@ -85,6 +102,7 @@ def dashboard_home(request):
     return render(request, 'dashboard/home.html', {
         'stats': stats, 'recent_enquiries': recent_enquiries, 'recent_posts': recent_posts,
         'recent_events': recent_events,
+        'recent_chat_leads': recent_chat_leads,
         'chart_labels': json.dumps(chart_labels), 'chart_data': json.dumps(chart_data),
         'post_status': json.dumps(post_status), 'page_title': 'Dashboard',
         'new_application_count': new_applications,
@@ -1939,152 +1957,3 @@ def event_image_delete(request, pk, img_pk):
         img.delete()
         messages.success(request, 'Gallery image removed.')
     return redirect('dashboard:event_edit', pk=pk)
-
-
-# ── CHATBOT LEADS ──────────────────────────────────────────────────────────────
-def _leads_filtered_queryset(request):
-    from chat.models import Lead
-    status = request.GET.get('status', '')
-    search = request.GET.get('search', '')
-    qs = Lead.objects.all()
-    if status:
-        qs = qs.filter(status=status)
-    if search:
-        qs = qs.filter(
-            Q(name__icontains=search) |
-            Q(phone__icontains=search) |
-            Q(email__icontains=search) |
-            Q(query__icontains=search)
-        )
-    return qs.order_by('-created_at')
-
-
-@staff_required
-def leads_list(request):
-    from chat.models import Lead
-    status = request.GET.get('status', '')
-    search = request.GET.get('search', '')
-    qs = _leads_filtered_queryset(request)
-    leads = Paginator(qs, 15).get_page(request.GET.get('page'))
-    counts = {
-        'pending':  Lead.objects.filter(status=Lead.STATUS_PENDING).count(),
-        'resolved': Lead.objects.filter(status=Lead.STATUS_RESOLVED).count(),
-        'all':      Lead.objects.count(),
-    }
-    return render(request, 'dashboard/leads/list.html', {
-        'leads': leads, 'status': status, 'search': search,
-        'counts': counts, 'page_title': 'Chatbot Leads',
-    })
-
-
-@staff_required
-@require_http_methods(['POST'])
-def lead_status_update(request, pk):
-    from chat.models import Lead
-    lead = get_object_or_404(Lead, pk=pk)
-    new_status = request.POST.get('status')
-    if new_status not in dict(Lead.STATUS_CHOICES):
-        return JsonResponse({'ok': False, 'error': 'Invalid status'}, status=400)
-    lead.status = new_status
-    lead.save(update_fields=['status', 'updated_at'])
-    return JsonResponse({'ok': True, 'status': lead.status})
-
-
-@staff_required
-def lead_delete(request, pk):
-    from chat.models import Lead
-    obj = get_object_or_404(Lead, pk=pk)
-    if request.method == 'POST':
-        obj.delete()
-        messages.success(request, 'Lead deleted.')
-        return redirect('dashboard:leads_list')
-    return render(request, 'dashboard/confirm_delete.html', {'obj': obj, 'page_title': 'Delete Lead'})
-
-
-@staff_required
-def leads_export_excel(request):
-    from openpyxl import Workbook
-    from openpyxl.styles import Font, PatternFill
-    from django.http import HttpResponse
-
-    qs = _leads_filtered_queryset(request)
-
-    wb = Workbook()
-    ws = wb.active
-    ws.title = 'Chatbot Leads'
-
-    headers = ['Date', 'Name', 'Phone', 'Email', 'Query', 'Status']
-    ws.append(headers)
-    header_fill = PatternFill(start_color='0077BE', end_color='0077BE', fill_type='solid')
-    for cell in ws[1]:
-        cell.font = Font(bold=True, color='FFFFFF')
-        cell.fill = header_fill
-
-    for lead in qs:
-        ws.append([
-            lead.created_at.strftime('%d %b %Y %H:%M'),
-            lead.name,
-            lead.phone,
-            lead.email,
-            lead.query,
-            lead.get_status_display(),
-        ])
-
-    widths = [18, 20, 16, 26, 45, 12]
-    for i, w in enumerate(widths, start=1):
-        ws.column_dimensions[chr(64 + i)].width = w
-
-    response = HttpResponse(
-        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
-    )
-    response['Content-Disposition'] = 'attachment; filename="chatbot-leads.xlsx"'
-    wb.save(response)
-    return response
-
-
-@staff_required
-def leads_export_pdf(request):
-    from reportlab.lib import colors
-    from reportlab.lib.pagesizes import landscape, A4
-    from reportlab.lib.units import mm
-    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph
-    from reportlab.lib.styles import getSampleStyleSheet
-    from django.http import HttpResponse
-
-    qs = _leads_filtered_queryset(request)
-    styles = getSampleStyleSheet()
-    cell_style = styles['BodyText']
-    cell_style.fontSize = 8
-
-    data = [['Date', 'Name', 'Phone', 'Email', 'Query', 'Status']]
-    for lead in qs:
-        data.append([
-            lead.created_at.strftime('%d %b %Y'),
-            Paragraph(lead.name, cell_style),
-            lead.phone,
-            Paragraph(lead.email, cell_style),
-            Paragraph(lead.query[:200], cell_style),
-            lead.get_status_display(),
-        ])
-
-    response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = 'attachment; filename="chatbot-leads.pdf"'
-
-    doc = SimpleDocTemplate(response, pagesize=landscape(A4),
-                             leftMargin=15 * mm, rightMargin=15 * mm,
-                             topMargin=15 * mm, bottomMargin=15 * mm)
-    table = Table(data, colWidths=[25 * mm, 35 * mm, 30 * mm, 45 * mm, 90 * mm, 25 * mm], repeatRows=1)
-    table.setStyle(TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0077be')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-        ('FONTSIZE', (0, 0), (-1, 0), 9),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#e2e8f0')),
-        ('VALIGN', (0, 0), (-1, -1), 'TOP'),
-        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8fafc')]),
-        ('FONTSIZE', (0, 1), (-1, -1), 8),
-        ('TOPPADDING', (0, 0), (-1, -1), 6),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
-    ]))
-    doc.build([table])
-    return response

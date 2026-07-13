@@ -1,6 +1,6 @@
 """
 chat/models.py
-Stores chat sessions and messages.
+Stores chat sessions, messages, FAQs and chatbot leads.
 """
 from django.db import models
 
@@ -62,10 +62,11 @@ class ChatbotFAQ(models.Model):
         return [k.strip().lower() for k in self.keywords.split(',') if k.strip()]
 
 
-class Lead(models.Model):
+# ── NEW: Chatbot Lead ─────────────────────────────────────────────────────────
+class ChatLead(models.Model):
     """
-    A lead captured from the chatbot widget (name + contact info + what
-    they asked about). Shown on the dashboard's "Chatbot Leads" screen.
+    Lead captured by the chatbot (name → phone → email → query workflow).
+    Shown in the custom dashboard under Chatbot Leads.
     """
     STATUS_PENDING  = 'pending'
     STATUS_RESOLVED = 'resolved'
@@ -74,23 +75,24 @@ class Lead(models.Model):
         (STATUS_RESOLVED, 'Resolved'),
     ]
 
-    session    = models.ForeignKey(
-        ChatSession, on_delete=models.SET_NULL,
-        related_name='leads', null=True, blank=True,
+    session_key = models.CharField(
+        max_length=120, blank=True, db_index=True,
+        help_text='Chat session this lead was captured in.'
     )
-    name       = models.CharField(max_length=150)
-    phone      = models.CharField(max_length=30, blank=True)
-    email      = models.EmailField(blank=True)
-    query      = models.TextField(help_text='What the visitor asked / was interested in.')
-    status     = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
-    source     = models.CharField(max_length=50, default='chatbot')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    name        = models.CharField(max_length=255)
+    phone       = models.CharField(max_length=20)
+    email       = models.EmailField()
+    query       = models.TextField()
+    status      = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    admin_note  = models.TextField(blank=True)
+    ip_address  = models.GenericIPAddressField(null=True, blank=True)
+    created_at  = models.DateTimeField(auto_now_add=True)
+    updated_at  = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering = ['-created_at']
-        verbose_name = 'Chatbot Lead'
+        ordering            = ['-created_at']
+        verbose_name        = 'Chatbot Lead'
         verbose_name_plural = 'Chatbot Leads'
 
     def __str__(self):
-        return f'{self.name} ({self.get_status_display()})'
+        return f'{self.name} — {self.phone}'

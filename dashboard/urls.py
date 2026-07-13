@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import chat_lead_views
 
 app_name = 'dashboard'
 
@@ -154,10 +155,11 @@ urlpatterns = [
     path('branches/<int:pk>/edit/',    views.branch_edit,   name='branch_edit'),
     path('branches/<int:pk>/delete/',  views.branch_delete, name='branch_delete'),
 
-    # ── CHATBOT LEADS ────────────────────────────────────────────────────────
-    path('leads/',                       views.leads_list,          name='leads_list'),
-    path('leads/<int:pk>/status/',       views.lead_status_update,  name='lead_status_update'),
-    path('leads/<int:pk>/delete/',       views.lead_delete,         name='lead_delete'),
-    path('leads/export/excel/',          views.leads_export_excel,  name='leads_export_excel'),
-    path('leads/export/pdf/',            views.leads_export_pdf,    name='leads_export_pdf'),
+    # ── Chatbot Leads ──
+    path('chat-leads/',                 chat_lead_views.chat_lead_list,         name='chat_lead_list'),
+    path('chat-leads/<int:pk>/',        chat_lead_views.chat_lead_detail,       name='chat_lead_detail'),
+    path('chat-leads/<int:pk>/delete/', chat_lead_views.chat_lead_delete,       name='chat_lead_delete'),
+    path('chat-leads/<int:pk>/status/', chat_lead_views.chat_lead_status,       name='chat_lead_status'),
+    path('chat-leads/export/excel/',    chat_lead_views.chat_lead_export_excel, name='chat_lead_export_excel'),
+    path('chat-leads/export/pdf/',      chat_lead_views.chat_lead_export_pdf,   name='chat_lead_export_pdf'),
 ]

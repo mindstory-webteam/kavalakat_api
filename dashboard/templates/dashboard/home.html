@@ -38,6 +38,16 @@
       <div class="stat-label">New Enquiries</div>
     </div>
   </div>
+  <!-- ── NEW: Chatbot Leads ── -->
+  <div class="stat-card">
+    <div class="stat-icon" style="background:rgba(20,184,166,.15);color:#14b8a6;">
+      <i class="fa-solid fa-robot"></i>
+    </div>
+    <div>
+      <div class="stat-value">{{ stats.new_chat_leads }}</div>
+      <div class="stat-label">New Chatbot Leads</div>
+    </div>
+  </div>
   <div class="stat-card">
     <div class="stat-icon" style="background:rgba(59,130,246,.15);color:#3b82f6;">
       <i class="fa-solid fa-briefcase"></i>
@@ -127,6 +137,11 @@
     <a href="{% url 'dashboard:enquiry_list' %}" class="btn btn-secondary btn-sm">
       <i class="fa-solid fa-envelope"></i> View Enquiries
     </a>
+    <!-- ── NEW ── -->
+    <a href="{% url 'dashboard:chat_lead_list' %}" class="btn btn-secondary btn-sm">
+      <i class="fa-solid fa-robot"></i> Chatbot Leads
+      {% if new_chat_lead_count %}<span class="badge badge-red" style="margin-left:4px;">{{ new_chat_lead_count }}</span>{% endif %}
+    </a>
   </div>
 </div>
 
@@ -185,6 +200,47 @@
           </tr>
           {% empty %}
           <tr><td colspan="4" class="text-muted" style="text-align:center;padding:20px;">No enquiries yet</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── NEW: Recent Chatbot Leads ── -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-title">Recent Chatbot Leads</span>
+      <a href="{% url 'dashboard:chat_lead_list' %}" class="btn btn-secondary btn-sm">View All</a>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Lead</th><th>Phone</th><th>Status</th><th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for l in recent_chat_leads %}
+          <tr>
+            <td>
+              <a href="{% url 'dashboard:chat_lead_detail' l.pk %}" style="color:var(--text);text-decoration:none;font-weight:500;">
+                {{ l.name }}
+              </a>
+              <div class="text-muted text-sm">{{ l.query|truncatechars:30 }}</div>
+            </td>
+            <td class="text-muted text-sm">
+              <a href="tel:{{ l.phone }}" style="color:var(--accent3);">{{ l.phone }}</a>
+            </td>
+            <td>
+              {% if l.status == 'new' %}<span class="badge badge-red">New</span>
+              {% elif l.status == 'contacted' %}<span class="badge badge-orange">Contacted</span>
+              {% elif l.status == 'converted' %}<span class="badge badge-green">Converted</span>
+              {% else %}<span class="badge badge-gray">Closed</span>{% endif %}
+            </td>
+            <td class="text-muted text-sm">{{ l.created_at|date:"d M" }}</td>
+          </tr>
+          {% empty %}
+          <tr><td colspan="4" class="text-muted" style="text-align:center;padding:20px;">No chatbot leads yet</td></tr>
           {% endfor %}
         </tbody>
       </table>

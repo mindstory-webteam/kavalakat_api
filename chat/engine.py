@@ -348,26 +348,6 @@ def _check_faqs(text: str):
     return None
 
 
-# ─── LEAD-CAPTURE INTENT ──────────────────────────────────────────────────────
-
-def wants_lead_capture(user_message: str, reply: str) -> bool:
-    """
-    Decide whether the widget should show the "leave your details" form
-    after this turn. Triggers on buying-intent language: quotes, pricing,
-    callbacks, enquiries, job applications, and explicit contact requests.
-    """
-    text = _norm(user_message)
-    triggers = (
-        'quote', 'quotation', 'estimate', 'price', 'pricing', 'cost',
-        'callback', 'call me', 'call back', 'contact me', 'reach me',
-        'get in touch', 'enquiry', 'inquiry', 'interested', 'apply',
-        'application', 'job', 'career', 'vacancy', 'hire', 'hiring',
-        'proposal', 'requirement', 'need help', 'want to know more',
-        'book a', 'schedule', 'appointment', 'consult',
-    )
-    return any(kw in text for kw in triggers)
-
-
 # ─── MAIN ENGINE ──────────────────────────────────────────────────────────────
 
 def get_reply(user_message: str, history: list | None = None) -> str:

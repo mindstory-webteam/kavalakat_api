@@ -1,7 +1,8 @@
 """
 chat/views.py
-POST /api/chat/              → send message, get reply
-GET  /api/chat/sessions/     → admin: list all sessions
+POST /api/chat/                → send message, get reply
+POST /api/chat/lead/           → save chatbot lead (name, phone, email, query)
+GET  /api/chat/sessions/       → admin: list all sessions
 GET  /api/chat/sessions/<key>/ → admin: view one session
 """
 import logging
@@ -10,14 +11,22 @@ from rest_framework.response    import Response
 from rest_framework             import viewsets, status
 from rest_framework.permissions import AllowAny, IsAdminUser
 
-from .models      import ChatSession, ChatMessage, Lead
+from .models      import ChatSession, ChatMessage, ChatLead
 from .serializers import (
-    MessageInputSerializer, ChatSessionSerializer,
-    LeadCreateSerializer, LeadSerializer,
+    MessageInputSerializer,
+    ChatSessionSerializer,
+    ChatLeadSerializer,
 )
-from .engine      import get_reply, wants_lead_capture
+from .engine      import get_reply
 
 logger = logging.getLogger('chat')
+
+
+def _client_ip(request):
+    xff = request.META.get('HTTP_X_FORWARDED_FOR')
+    if xff:
+        return xff.split(',')[0].strip()
+    return request.META.get('REMOTE_ADDR')
 
 
 class ChatView(APIView):
@@ -71,84 +80,51 @@ class ChatView(APIView):
 
         session.save(update_fields=['updated_at'])
 
-        # Already captured a lead for this session? Don't ask again.
-        already_has_lead = session.leads.exists()
-        capture_lead = (not already_has_lead) and wants_lead_capture(user_text, reply)
-
         return Response({
-            'success'     : True,
-            'message'     : reply,
-            'session_key' : session_key,
-            'capture_lead': capture_lead,
+            'success'    : True,
+            'message'    : reply,
+            'session_key': session_key,
         })
 
 
-class LeadCreateView(APIView):
+# ── NEW: Lead capture (public — called by the chatbot widget) ────────────────
+class ChatLeadView(APIView):
     """
-    POST /api/chat/leads/
-    Body:    { "session_key": "...", "name": "...", "phone": "...",
-                "email": "...", "query": "..." }
-    Returns: { "success": true, "message": "..." }
-
-    Used by the public chatbot widget's lead-capture form. Anyone can
-    submit — no auth required — same as the chat endpoint itself.
+    POST /api/chat/lead/
+    Body: {
+        "session_key": "<uuid>",       (optional)
+        "name":        "John",
+        "phone":       "9876543210",
+        "email":       "john@x.com",
+        "query":       "I need a quote"
+    }
+    Returns: { "success": true, "lead_id": 12, "message": "Lead saved." }
     """
     permission_classes = [AllowAny]
 
     def post(self, request):
-        inp = LeadCreateSerializer(data=request.data)
-        inp.is_valid(raise_exception=True)
-        data = inp.validated_data
+        ser = ChatLeadSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
 
-        session = None
-        session_key = data.get('session_key', '').strip()
-        if session_key:
-            session, _ = ChatSession.objects.get_or_create(session_key=session_key)
-
-        lead = Lead.objects.create(
-            session = session,
-            name    = data['name'],
-            phone   = data.get('phone', ''),
-            email   = data.get('email', ''),
-            query   = data.get('query', '').strip() or 'General enquiry from chatbot',
-        )
-
-        logger.info('New chatbot lead captured: %s (id=%s)', lead.name, lead.id)
+        lead = ser.save(ip_address=_client_ip(request))
+        logger.info('New chatbot lead #%s from %s (%s)', lead.id, lead.name, lead.phone)
 
         return Response({
             'success': True,
-            'message': "Thanks! We've received your details and our team will reach out shortly. 🙌",
             'lead_id': lead.id,
+            'message': 'Lead saved successfully.',
         }, status=status.HTTP_201_CREATED)
 
 
-class LeadViewSet(viewsets.ModelViewSet):
+class ChatLeadViewSet(viewsets.ReadOnlyModelViewSet):
     """
-    Admin only — manage chatbot leads.
-    GET    /api/chat/leads/manage/           list
-    GET    /api/chat/leads/manage/<pk>/      retrieve
-    PATCH  /api/chat/leads/manage/<pk>/      update status
-    DELETE /api/chat/leads/manage/<pk>/      delete
+    Admin only — view all chatbot leads via API.
+    GET /api/chat/leads/
+    GET /api/chat/leads/<id>/
     """
-    serializer_class   = LeadSerializer
+    serializer_class   = ChatLeadSerializer
     permission_classes = [IsAdminUser]
-    queryset            = Lead.objects.all().order_by('-created_at')
-
-    def list(self, request, *args, **kwargs):
-        qs     = self.filter_queryset(self.get_queryset())
-        status_q = request.query_params.get('status')
-        if status_q:
-            qs = qs.filter(status=status_q)
-        page = self.paginate_queryset(qs)
-        if page is not None:
-            return self.get_paginated_response(
-                self.get_serializer(page, many=True).data
-            )
-        return Response({
-            'success': True,
-            'count'  : qs.count(),
-            'data'   : self.get_serializer(qs, many=True).data,
-        })
+    queryset           = ChatLead.objects.all()
 
 
 class ChatSessionViewSet(viewsets.ReadOnlyModelViewSet):

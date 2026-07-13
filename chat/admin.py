@@ -2,7 +2,7 @@
 chat/admin.py
 """
 from django.contrib import admin
-from .models import ChatSession, ChatMessage, ChatbotFAQ, Lead
+from .models import ChatSession, ChatMessage, ChatbotFAQ, ChatLead
 
 
 class ChatMessageInline(admin.TabularInline):
@@ -45,20 +45,6 @@ class ChatMessageAdmin(admin.ModelAdmin):
         return False
 
 
-@admin.register(Lead)
-class LeadAdmin(admin.ModelAdmin):
-    list_display    = ['name', 'phone', 'email', 'short_query', 'status', 'created_at']
-    list_editable   = ['status']
-    list_filter     = ['status', 'source']
-    search_fields   = ['name', 'phone', 'email', 'query']
-    readonly_fields = ['session', 'created_at', 'updated_at']
-    ordering        = ['-created_at']
-
-    def short_query(self, obj):
-        return obj.query[:60]
-    short_query.short_description = 'Query'
-
-
 @admin.register(ChatbotFAQ)
 class ChatbotFAQAdmin(admin.ModelAdmin):
     list_display  = ['question', 'keywords', 'is_active', 'order']
@@ -80,3 +66,18 @@ class ChatbotFAQAdmin(admin.ModelAdmin):
             )
         }),
     )
+
+
+# ── NEW: Chatbot Leads ────────────────────────────────────────────────────────
+@admin.register(ChatLead)
+class ChatLeadAdmin(admin.ModelAdmin):
+    list_display    = ['name', 'phone', 'email', 'short_query', 'status', 'created_at']
+    list_editable   = ['status']
+    list_filter     = ['status', 'created_at']
+    search_fields   = ['name', 'phone', 'email', 'query']
+    readonly_fields = ['session_key', 'ip_address', 'created_at', 'updated_at']
+    ordering        = ['-created_at']
+
+    def short_query(self, obj):
+        return obj.query[:60]
+    short_query.short_description = 'Query'
