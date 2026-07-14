@@ -1,45 +1,43 @@
-CHATBOT LEADS — WHAT WAS UPDATED IN THIS PROJECT
-════════════════════════════════════════════════
+CHATBOT — LEAD-ONLY MODE (no AI / no website data fetching)
+════════════════════════════════════════════════════════════
 
-BACKEND (chat app)
-  chat/models.py           → added ChatLead model (Pending / Resolved)
-  chat/serializers.py      → added ChatLeadSerializer (phone + email validation)
-  chat/views.py            → added ChatLeadView: POST /api/chat/lead/ (public)
-                             + ChatLeadViewSet: GET /api/chat/leads/ (admin)
-  chat/urls.py             → added lead routes
-  chat/admin.py            → registered ChatLead in Django admin
-  chat/migrations/0003_chatlead.py → ready migration
-
-DASHBOARD
-  dashboard/chat_lead_views.py   → NEW standalone module (list, detail,
-                                   delete, AJAX status, Excel & PDF export)
-  dashboard/urls.py              → wired 6 chat-leads routes
-  dashboard/context_processors.py→ pending-lead sidebar badge count
-  dashboard/templates/dashboard/base.html → "Chatbot Leads" sidebar link
-  dashboard/templates/dashboard/home.html → New Chatbot Leads stat card,
-                                   Quick Action button, Recent Chatbot Leads table
-  dashboard/views.py (dashboard_home only) → lead stats + recent leads
-  dashboard/templates/dashboard/chat_leads/
-      list.html    → screenshot design: Pending/Resolved counts, Excel/PDF,
-                     search, status filter, inline status dropdown, delete
-      detail.html  → query + full chat transcript + WhatsApp + note + status
-      print.html   → PDF export (printable page)
+HOW THE CHATBOT WORKS NOW (design unchanged)
+  1. Welcome screen → Start Chat
+  2. Step 1: Name  (greetings like "hi" rejected as names)
+  3. Step 2: Phone (10-digit Indian mobile validation)
+  4. Step 3: Email (format validation)
+  5. Step 4: User types their query
+  6. Lead is saved →  POST /api/chat/lead/   ← the ONLY API call
+  7. Bot replies: "Our team will contact you at <phone> shortly."
+  8. Any further typed messages get a fixed reply:
+     "Thank you for your message. Our team will contact you shortly.
+      For urgent queries call <phoneNumber>."
+     → NO backend call, NO AI, NO services/portfolio/FAQ data fetching.
+  9. Returning users the same day skip the form and get the
+     "Welcome back — team is working on it" message.
 
 FRONTEND
-  frontend/ChatbotWidget.tsx → full widget: Welcome → Name → Phone → Email
-                               → Query → lead POSTed to /api/chat/lead/
-                               → then AI chat via /api/chat/
+  frontend/ChatbotWidget.tsx  → lead-only version (design identical)
+
+BACKEND (chat app)
+  POST /api/chat/lead/  → saves lead (used by the widget)
+  POST /api/chat/       → old AI chat endpoint still exists but the
+                          widget NEVER calls it. Remove later if unused.
+
+DASHBOARD
+  /dashboard/chat-leads/          → list (Pending/Resolved, search,
+                                    Excel/PDF export, inline status)
+  /dashboard/chat-leads/<id>/     → lead detail + admin note
+  Home page                       → stat card + Recent Chatbot Leads
 
 TO DEPLOY
-  1. python manage.py migrate chat        (creates the chat_chatlead table)
-  2. (optional) pip install openpyxl      (real .xlsx export; CSV fallback otherwise)
-  3. Restart the server → open /dashboard/chat-leads/
-  4. Use frontend/ChatbotWidget.tsx in your Next.js site:
+  1. python manage.py migrate chat
+  2. Restart server → open /dashboard/chat-leads/
+  3. Use frontend/ChatbotWidget.tsx in your Next.js site:
        <ChatbotWidget apiBase="https://api.kavalakat.com/api" />
 
-NOTE: your events app has a pre-existing duplicate-table quirk
-(EventImage is created in both 0001 and 0002). On a FRESH database run:
+NOTE (fresh database only): events app has a pre-existing duplicate
+EventImage migration. On a fresh DB run:
     python manage.py migrate events 0001
     python manage.py migrate events 0002 --fake
     python manage.py migrate
-On your existing database this does not matter.
